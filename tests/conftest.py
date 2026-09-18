@@ -208,13 +208,23 @@ def test_database(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def test_settings(tmp_path, monkeypatch):
-    """Isolated Settings instance over a temp JSON file."""
+    """Isolated Settings instance installed as the shared singleton.
+
+    Installing (not just creating) matters: production code reads
+    settings through ``get_settings()`` (e.g. the notification layer),
+    which returns the module-level singleton. Without installation, a
+    singleton created by an earlier test's notify call could serve
+    stale in-memory state to later tests - an ordering-dependent race
+    seen on CI. Restored to None on teardown so the next sandbox
+    rebuilds it against its own paths.
+    """
     settings_path = tmp_path / "settings.json"
     monkeypatch.setattr("utils.paths.settings_path", lambda: settings_path)
     import utils.settings as settings_module
 
     settings_module._shared = None  # force re-creation
     settings = Settings(settings_path)
+    settings_module._shared = settings
     yield settings
     settings_module._shared = None
 

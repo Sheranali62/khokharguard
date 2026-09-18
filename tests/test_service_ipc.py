@@ -577,10 +577,18 @@ def test_list_scans_merges_service_rows(test_database, monkeypatch):
     from services import service_control
 
     test_database.scan_start("quick", [r"C:\local"])
+    # Remote timestamp must always sort newer than the local row. The
+    # DB writes UTC, so derive from utc_timestamp() rather than the
+    # local clock (a fixed offset would break in other timezones).
+    from datetime import datetime as _dt, timedelta as _td
+    from database.database import utc_timestamp
+
+    soon = (_dt.strptime(utc_timestamp(), "%Y-%m-%d %H:%M:%S")
+            + _td(hours=1)).strftime("%Y-%m-%d %H:%M")
     remote = {
         "scans": [
-            {"scan_id": 7, "scan_type": "usb", "start_time": "2026-09-18 23:00",
-             "end_time": "2026-09-18 23:01", "files_scanned": 55,
+            {"scan_id": 7, "scan_type": "usb", "start_time": soon,
+             "end_time": soon, "files_scanned": 55,
              "threats_found": 1, "suspicious_found": 0, "status": "completed"},
         ],
         "threats": [],
