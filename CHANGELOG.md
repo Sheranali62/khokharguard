@@ -1,0 +1,134 @@
+# Changelog
+
+All notable changes to LocalGuard Antivirus are documented here.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and the project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.0.0] - 2026-09-18
+
+Initial release.
+
+### Added
+
+**Scanning engine**
+
+- Quick, full, custom, and USB scan modes with live progress,
+  pause/resume/stop, and full statistics (files, directories, threats,
+  suspicious, skipped, errors).
+- SHA-256 hashing with chunked reads and an optional rescan cache;
+  large files are never loaded fully into memory.
+- Signature matching against the local database (`signatures/hashes.json`)
+  with EICAR test-signature support.
+- Heuristic risk engine (0-100 score, four bands): suspicious locations,
+  double extensions, masquerading filenames, persistence mechanisms,
+  script content indicators, and more. Indicators are advisory - the
+  engine classifies uncertain files as suspicious for review, never as
+  proven malware.
+- Static PE analysis without execution: architecture, sections, imports,
+  entry point, entropy, compile timestamp, signature presence.
+- Archive inspection (ZIP/TAR plus 7z/RAR when 7-Zip is installed) with
+  archive-bomb guards: member count, total size, compression ratio,
+  recursion depth, and time limits.
+- Optional YARA rule scanning (`signatures/yara/`); the app works fully
+  without YARA installed.
+- Starter YARA rule set shipped in-house: download cradles, obfuscated
+  base64 execution, scheduled-task persistence, mshta remote execution,
+  malicious .lnk/.url shortcut structures, and autorun.inf abuse - all
+  content-based, severity-honest (`medium` rules classify as
+  SUSPICIOUS for review, never auto-deleted), and validated by tests.
+- YARA detections surface with their own method and detection name
+  (`YARA.<RuleName>`) instead of a generic heuristic verdict.
+
+**Protection**
+
+- USB protection: insertion detection, device tracking, optional
+  auto-scan of removable drives, and inspection of autorun mechanisms,
+  shortcut structures, and masquerading executables.
+- Real-time monitoring (watchdog, with a polling fallback) of
+  Downloads/Desktop/Temp for new suspicious files; auto-quarantine only
+  ever applies to signature-confirmed threats.
+- Background protection service (`LocalGuard.exe service ...` or the
+  Settings page): keeps real-time and USB protection running when the
+  GUI is closed. The GUI detects a running background core through
+  authenticated IPC and defers to it - the two never double-watch the
+  same folders.
+- Findings raised while the GUI is closed stream into the session
+  when it reopens (`recent_findings` IPC method, watermark-based), so
+  background detections appear in the UI exactly like local ones.
+- Service-session scan and threat history merges into the GUI's
+  history and dashboard views (`get_history` IPC method, cached),
+  closing the cross-account visibility gap of the SCM-hosted mode.
+- Startup folder, registry Run/RunOnce, scheduled task, and service
+  analysis with evidence-based flags and confirmed-only removal.
+  Removals snapshot state first (registry values, task XML) so cleanup
+  is reversible.
+
+**Quarantine**
+
+- Secure vault workflow: hash-verified move to an isolated directory,
+  non-executable `.quar` wrapper, hidden/system attributes, and ACL
+  tightening where practical. Restore verifies bytes before release;
+  permanent deletion requires explicit confirmation.
+
+**User experience**
+
+- Dark/light themed Tkinter dashboard: protection status, scan pages,
+  USB protection, quarantine, scan history, real-time/security pages,
+  settings, and about. Long operations run on worker threads; the GUI
+  never blocks.
+- System tray icon with protected/paused/warning states, a flashing
+  progress badge while scans run, and the full spec section 43 menu.
+- Windows notifications through the tray icon with per-kind enable/
+  disable switches and configurable rate limits (Settings >
+  Notifications).
+- One-click EICAR detection self-test (About page) that reports
+  honestly when another antivirus intercepts the test file and offers
+  an exclusion hint so a full detection verdict can be demonstrated.
+- First-run wizard, scan history with TXT/CSV/JSON report export, and
+  a security event log.
+
+**Platform and delivery**
+
+- SQLite storage (10 tables, parameterized queries only) with
+  corruption self-healing; JSON settings with documented defaults.
+- Safe CLI (`scan`, `quick-scan`, `scan-usb`, `quarantine`, `restore`,
+  `status`, `service`, `version`) - no arbitrary command execution.
+- Fully sandboxed test suite (no test touches the repo, the user
+  profile, or spawns processes), performance benchmarks, and
+  adversarial tests (malformed PEs, archive bombs, corrupt databases,
+  hostile paths).
+- PyInstaller build (`localguard.spec`) and Inno Setup installer with
+  Start Menu shortcuts, optional autostart, and per-user install
+  support (`/CURRENTUSER`).
+- Windows CI (GitHub Actions): compileall, pytest, PyInstaller build
+  with CLI smoke test, and Inno Setup compile on every push; release
+  artefacts on `v*` tags.
+- Authenticode signing via Azure Artifact Signing in CI (enabled by
+  adding the documented secrets; builds remain fully functional and
+  publish unsigned when signing is not configured).
+
+### Security
+
+- Local-first and offline-capable; telemetry, cloud reputation, and
+  file uploads are off by default and can stay off.
+- The service IPC channel is loopback-only, token-authenticated
+  (constant-time comparison), size-capped, and limited to a fixed
+  method allow-list.
+- LocalGuard never disables Windows Security, never executes scanned
+  content, and never removes system files without strong evidence and
+  explicit user confirmation.
+
+### Limitations
+
+- No kernel-level protection; LocalGuard complements Windows Security
+  and does not replace it. No antivirus can guarantee detection or
+  removal of every threat.
+- 7z/RAR inspection requires 7-Zip; HKLM/task/service cleanups and the
+  SCM service lifecycle require Administrator approval.
+- In 1.0 the SCM-hosted service runs under its own account and does
+  not report status into user sessions; console-session headless mode
+  (`service run`) provides cross-process reporting via IPC.
+- Signature updates ship as manifest-verified archives; production
+  deployments should add cryptographic signing on top.
+
+[1.0.0]: https://example.invalid/localguard/releases/tag/v1.0.0

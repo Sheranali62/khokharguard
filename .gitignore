@@ -1,0 +1,23 @@
+# LocalGuard runtime artifacts
+logs/
+reports/
+database/localguard.db
+database/localguard.db-wal
+database/localguard.db-shm
+database/*.corrupt.bak
+config/settings.json
+
+# Agent workspace state
+.freebuff/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Packaging
+build/
+dist/
+*.spec.bak

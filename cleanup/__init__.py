@@ -1,0 +1,1 @@
+"""LocalGuard Antivirus - cleanup package."""

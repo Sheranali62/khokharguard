@@ -1,0 +1,178 @@
+# Continuous integration for LocalGuard Antivirus.
+#
+# Runs on Windows (the target platform) on every push and pull request:
+#
+#   1. Byte-compile every module   (python -m compileall)
+#   2. Unit + integration tests    (pytest, fully sandboxed)
+#   3. Frozen build                (PyInstaller, localguard.spec)
+#   4. Installer compile           (Inno Setup, LocalGuard_Setup.iss)
+#
+# The frozen build steps are skipped for pull requests from forks.
+# Version tags (v*) additionally upload the installer and portable
+# bundle as release artefacts.
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  windows-build:
+    name: Windows - tests and packaging
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    # Authenticode signing secrets (Azure Artifact Signing). When
+    # absent, the signing steps skip themselves and artefacts are
+    # published unsigned. Exported at job level so step-level
+    # ``if: env.X != ''`` conditions are reliable.
+    env:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+      AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+      AZURE_SIGNING_CERT_PROFILE: ${{ secrets.AZURE_SIGNING_CERT_PROFILE }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install "pyinstaller>=6.0.0"
+
+      # ----------------------------------------------------------------
+      # 1. Byte-compile: catches syntax errors and import-time breakage
+      #    before the slower steps run (spec section 63).
+      # ----------------------------------------------------------------
+      - name: Compile all modules
+        run: python -m compileall -q .
+
+      # ----------------------------------------------------------------
+      # 2. Test suite. Sandboxed per tests/conftest.py - no test touches
+      #    the repo, the user profile, or spawns processes. The EICAR
+      #    disk tests self-skip when Defender intercepts the artifact.
+      # ----------------------------------------------------------------
+      - name: Run test suite
+        run: python -m pytest -q --tb=short
+
+      - name: Release consistency check
+        run: python scripts/check_release.py
+
+      # ----------------------------------------------------------------
+      # 3. Frozen executable. Fork PRs skip the packaging steps;
+      #    everything else builds to prove the spec stays valid.
+      # ----------------------------------------------------------------
+      - name: Build frozen executable (PyInstaller)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        run: pyinstaller localguard.spec --noconfirm
+
+      # ----------------------------------------------------------------
+      # 3b. Authenticode signing (Azure Artifact Signing, formerly
+      #     Trusted Signing). Skipped when the Azure secrets are not
+      #     configured - unsigned artefacts still build, publish, and
+      #     install; they just trigger SmartScreen until signing is
+      #     set up. Enable by adding these repository secrets:
+      #       AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET
+      #       AZURE_SIGNING_ENDPOINT / AZURE_SIGNING_ACCOUNT
+      #       AZURE_SIGNING_CERT_PROFILE
+      #     (An Artifact Signing account with a certificate profile is
+      #     required in the Azure tenant; see the signing docs.)
+      # ----------------------------------------------------------------
+      - name: Sign frozen binaries (Authenticode)
+        if: ${{
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) &&
+          env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ env.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ env.AZURE_SIGNING_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\dist\LocalGuard
+          files-folder-filter: exe,dll
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Smoke-test frozen CLI
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        run: |
+          $out = & .\dist\LocalGuard\LocalGuard.exe version
+          $out | Out-String | Write-Host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # ----------------------------------------------------------------
+      # 4. Installer compile. Inno Setup 6 is preinstalled on GitHub's
+      #    Windows runners; fall back to chocolatey if a future image
+      #    drops it.
+      # ----------------------------------------------------------------
+      - name: Compile installer (Inno Setup)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup compiler not found" }
+          & $iscc installer\LocalGuard_Setup.iss /O"dist\installer"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Sign the freshly built installer too, when signing is enabled.
+      - name: Sign installer (Authenticode)
+        if: ${{
+          startsWith(github.ref, 'refs/tags/v') &&
+          env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ env.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ env.AZURE_SIGNING_CERT_PROFILE }}
+          files: ${{ github.workspace }}\dist\installer\LocalGuard_Setup_${{ github.ref_name }}.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      # ----------------------------------------------------------------
+      # Release artefacts on version tags (checked for consistency
+      # before upload).
+      # ----------------------------------------------------------------
+      - name: Verify release artefacts
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: python scripts/check_release.py --artifacts dist
+
+      - name: Upload installer artefact
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalGuard-Setup-${{ github.ref_name }}
+          path: dist/installer/*.exe
+          if-no-files-found: error
+
+      - name: Upload portable bundle artefact
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalGuard-portable-${{ github.ref_name }}
+          path: dist/LocalGuard/
+          if-no-files-found: error

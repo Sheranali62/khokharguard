@@ -1,0 +1,58 @@
+{
+  "general": {
+    "first_run_completed": false,
+    "start_with_windows": false,
+    "minimize_to_tray": true,
+    "show_notifications": true,
+    "theme": "dark"
+  },
+  "protection": {
+    "realtime_enabled": true,
+    "realtime_watch_locations": ["downloads", "desktop", "temp"],
+    "usb_autoscan": true,
+    "auto_quarantine": false,
+    "scan_archives": true
+  },
+  "notifications": {
+    "enable_usb_detected": true,
+    "enable_threat_detected": true,
+    "enable_scan_complete": true,
+    "enable_protection_disabled": true,
+    "enable_update_available": true,
+    "rate_limit_usb_detected": 30.0,
+    "rate_limit_threat_detected": 10.0,
+    "rate_limit_scan_complete": 5.0,
+    "rate_limit_protection_disabled": 60.0,
+    "rate_limit_update_available": 3600.0
+  },
+  "performance": {
+    "scan_threads": 4,
+    "cpu_limit_percent": 80,
+    "max_file_size_mb": 512,
+    "scan_priority": "below_normal",
+    "cache_hashes": true,
+    "skip_unchanged_files": true
+  },
+  "updates": {
+    "signature_updates_enabled": true,
+    "update_url": "",
+    "update_interval_hours": 24,
+    "require_signature_verification": true
+  },
+  "privacy": {
+    "telemetry": false,
+    "cloud_reputation": false,
+    "file_upload": false
+  },
+  "usb": {
+    "require_confirmation_before_removal": true
+  },
+  "gui": {
+    "window_width": 1180,
+    "window_height": 740
+  },
+  "database": {
+    "signature_db_version": "1.0.0",
+    "signature_db_updated": ""
+  }
+}
