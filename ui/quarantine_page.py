@@ -76,20 +76,38 @@ class QuarantinePage(ttk.Frame):
                    command=self._show_details).pack(side="left", padx=(0, 8))
         ttk.Button(btn_row, text="Refresh",
                    command=self.refresh).pack(side="left")
-
     # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
 
-    def _selected_record(self):
-        """Return the DB record behind the selected row."""
+    def _selected_record(self, *, allow_service: bool = False):
+        """Return the DB record behind the selected row.
+
+        Service-originated rows (background protection vault) are
+        read-only in this session: their files live in the service's
+        quarantine, so destructive actions are refused here unless
+        ``allow_service`` is set (details view is allowed).
+        """
         selection = self.tree.selection()
         if not selection:
             tk.messagebox.showinfo("LocalGuard", "Select a quarantined item first.",
                                    parent=self)
             return None
-        return self.app.quarantine_record_for_row(self.tree.item(
+        record = self.app.quarantine_record_for_row(self.tree.item(
             selection[0], "values"))
+        if record is None:
+            return None
+        if not allow_service and record.get("origin") == "service":
+            tk.messagebox.showwarning(
+                "Background protection item",
+                "This item was quarantined by the LocalGuard background "
+                "service and lives in that service's vault. It is shown "
+                "here read-only - use the service session (or stop the "
+                "service) to restore or delete it.",
+                parent=self,
+            )
+            return None
+        return record
 
     def _restore_selected(self) -> None:
         """Restore the selected item after explicit confirmation."""
@@ -125,7 +143,7 @@ class QuarantinePage(ttk.Frame):
 
     def _show_details(self) -> None:
         """Show full metadata for the selected record."""
-        record = self._selected_record()
+        record = self._selected_record(allow_service=True)
         if record is None:
             return
         self.app.show_quarantine_details(record, parent=self)
@@ -139,8 +157,12 @@ class QuarantinePage(ttk.Frame):
         for item in self.tree.get_children():
             self.tree.delete(item)
         for record in self.app.list_quarantine_records():
+            service_origin = record.get("origin") == "service"
+            threat = str(record.get("detection_name", ""))
+            if service_origin:
+                threat += "  [service]"
             self.tree.insert("", "end", values=(
-                str(record.get("detection_name", "")),
+                threat,
                 str(record.get("original_path", "")),
                 str(record.get("detection_type", "")),
                 str(record.get("severity", "")).upper(),

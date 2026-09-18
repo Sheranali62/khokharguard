@@ -646,3 +646,108 @@ def test_history_cache_respects_ttl(test_database, monkeypatch):
     app.list_scans()
     app.list_scans()
     assert len(calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Quarantine + exclusions merge (service scope shown in the GUI)
+# ---------------------------------------------------------------------------
+
+
+def _bare_app_with_history(test_database, monkeypatch, snapshot):
+    """A bare app whose remote-history fetch returns *snapshot*."""
+    from services import service_control
+    from ui.app import LocalGuardApp
+
+    monkeypatch.setattr(service_control, "send_command",
+                        lambda method, params=None: snapshot)
+    app = LocalGuardApp.__new__(LocalGuardApp)
+    app.database = test_database
+    app.background_protection = True
+    app._remote_history_cache = None
+    return app
+
+
+def test_get_history_includes_quarantine_and_exclusions(service_core):
+    """The IPC snapshot carries active quarantine + exclusion rows."""
+    service_core.database.add_quarantine_record({
+        "original_path": r"C:\evil.exe",
+        "quarantine_path": r"C:\vault\evil.quar",
+        "sha256": "cd" * 32,
+        "detection_name": "Test.Malware",
+        "severity": "high",
+        "file_size": 42,
+    })
+    service_core.database.add_exclusion("folder", r"D:\trusted")
+
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("get_history", {})
+    assert len(response["quarantined"]) == 1
+    # Service-local vault paths never leave the service process.
+    assert "quarantine_path" not in response["quarantined"][0]
+    assert "metadata" not in response["quarantined"][0]
+    assert response["quarantined"][0]["detection_name"] == "Test.Malware"
+    assert response["exclusions"][0]["value"] == r"D:\trusted"
+
+
+def test_quarantine_view_merges_service_rows(test_database, monkeypatch):
+    """Service quarantine rows appear marked as service origin."""
+    test_database.add_quarantine_record({
+        "original_path": r"C:\local.exe",
+        "detection_name": "Local.Threat",
+    })
+    snapshot = {"scans": [], "threats": [], "exclusions": [],
+                "quarantined": [
+                    {"quarantine_id": 9, "original_path": r"C:\svc.exe",
+                     "detection_name": "Service.Threat",
+                     "severity": "high"}]}
+    app = _bare_app_with_history(test_database, monkeypatch, snapshot)
+    rows = app.list_quarantine_records()
+    names = [r["detection_name"] for r in rows]
+    assert "Local.Threat" in names and "Service.Threat" in names
+    svc = next(r for r in rows if r["detection_name"] == "Service.Threat")
+    assert svc["origin"] == "service"
+    local = next(r for r in rows if r["detection_name"] == "Local.Threat")
+    assert "origin" not in local
+
+
+def test_quarantine_count_includes_service_rows(test_database, monkeypatch):
+    """The dashboard count covers both scopes."""
+    test_database.add_quarantine_record({
+        "original_path": r"C:\local.exe",
+        "detection_name": "Local.Threat",
+    })
+    snapshot = {"scans": [], "threats": [],
+                "quarantined": [{"quarantine_id": 1}, {"quarantine_id": 2}],
+                "exclusions": []}
+    app = _bare_app_with_history(test_database, monkeypatch, snapshot)
+    assert app.quarantine_count() == 3
+
+
+def test_exclusions_merge_marks_service_scope(test_database, monkeypatch):
+    """Service-only exclusions are marked; duplicates are de-duplicated."""
+    test_database.add_exclusion("folder", r"D:\shared")
+    snapshot = {"scans": [], "threats": [], "quarantined": [],
+                "exclusions": [
+                    {"exclusion_id": 1, "exclusion_type": "folder",
+                     "value": r"D:\shared"},
+                    {"exclusion_id": 2, "exclusion_type": "hash",
+                     "value": "ab" * 32},
+                ]}
+    app = _bare_app_with_history(test_database, monkeypatch, snapshot)
+    rows = app.list_exclusions_merged()
+    scopes = {(r["value"], r.get("origin", "local")) for r in rows}
+    assert (r"D:\shared", "local") in scopes       # local wins, no dup
+    assert (("ab" * 32), "service") in scopes      # service-only marked
+    assert len([r for r in rows if r["value"] == r"D:\shared"]) == 1
+
+
+def test_exclusions_view_degrades_without_service(test_database):
+    """No service: merged view is exactly the local set."""
+    from ui.app import LocalGuardApp
+
+    test_database.add_exclusion("extension", ".log")
+    app = LocalGuardApp.__new__(LocalGuardApp)
+    app.database = test_database
+    app.background_protection = False
+    assert [r["value"] for r in app.list_exclusions_merged()] == [".log"]

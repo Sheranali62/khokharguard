@@ -815,16 +815,46 @@ class LocalGuardApp:
     # ------------------------------------------------------------------
 
     def list_quarantine_records(self) -> List[Dict[str, Any]]:
-        """Active quarantine records."""
-        return self.database.list_quarantine(active_only=True)
+        """Active quarantine records, merged with the service's.
+
+        Service rows are marked ``origin="service"``; their vault
+        paths live on the service's filesystem, so Restore/Details
+        actions stay local-only (a service row shows the detection
+        but no action buttons - enforced by the page via the flag).
+        """
+        local = self.database.list_quarantine(active_only=True)
+        remote = self._remote_history().get("quarantined", [])
+        if not remote:
+            return local
+        merged = [dict(row) for row in local]
+        for row in remote:
+            entry = dict(row)
+            entry["origin"] = "service"
+            merged.append(entry)
+        return merged
 
     def quarantine_record_for_row(self, values) -> Optional[Dict[str, Any]]:
-        """Map a quarantine table row back to its DB record."""
+        """Map a quarantine table row back to its DB record.
+
+        Local rows resolve to their database record. Rows contributed
+        by the background service resolve to the merged service record
+        flagged ``origin="service"`` so the quarantine page can keep
+        Restore/Delete disabled for them (their vault files live on
+        the service's filesystem, not this session's).
+        """
         if not values or len(values) < 2:
             return None
         for record in self.database.list_quarantine(active_only=True):
             if (str(record.get("detection_name", "")) == str(values[0])
                     and str(record.get("original_path", "")) == str(values[1])):
+                return record
+        for record in self.list_quarantine_records():
+            if record.get("origin") != "service":
+                continue
+            name = str(record.get("detection_name", ""))
+            # The page marks service rows with a "[service]" suffix.
+            if str(values[0]).removesuffix("  [service]") == name \
+                    and str(record.get("original_path", "")) == str(values[1]):
                 return record
         return None
 
@@ -947,8 +977,34 @@ class LocalGuardApp:
         return counts
 
     def quarantine_count(self) -> int:
-        """Active quarantine count."""
-        return self.database.quarantine_count()
+        """Active quarantine count (local + service)."""
+        remote = self._remote_history().get("quarantined", [])
+        return self.database.quarantine_count() + len(remote)
+
+    def list_exclusions_merged(self) -> List[Dict[str, Any]]:
+        """All exclusions: local (editable) plus service mirror.
+
+        Service-scope exclusions are shown read-only (``origin=
+        "service"``) so the user sees the complete effective set;
+        editing them is a future service-side command.
+        """
+        local = self.list_exclusions()
+        remote = self._remote_history().get("exclusions", [])
+        if not remote:
+            return local
+        merged = [dict(row) for row in local]
+        local_keys = {
+            (str(r.get("exclusion_type")), str(r.get("value")))
+            for r in local
+        }
+        for row in remote:
+            key = (str(row.get("exclusion_type")), str(row.get("value")))
+            if key in local_keys:
+                continue  # same exclusion configured in both scopes
+            entry = dict(row)
+            entry["origin"] = "service"
+            merged.append(entry)
+        return merged
 
     def total_scans(self) -> int:
         """Number of recorded scans."""

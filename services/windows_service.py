@@ -532,11 +532,26 @@ class ProtectionServiceCore:
 
         scans: List[Dict[str, Any]] = []
         threats: List[Dict[str, Any]] = []
+        quarantined: List[Dict[str, Any]] = []
+        exclusions: List[Dict[str, Any]] = []
         if self.database is not None:
             scans = [dict(row) for row in self.database.list_scans(
                 limit=_limit("scans_limit"))]
             threats = [dict(row) for row in self.database.list_threats(
                 limit=_limit("threats_limit"))]
+            # Quarantine records: metadata/quarantine paths are local
+            # to the service's filesystem and are stripped before the
+            # rows leave the process - the GUI shows origin and
+            # detection, not service-local file locations.
+            for row in self.database.list_quarantine(active_only=True):
+                entry = dict(row)
+                entry.pop("quarantine_path", None)
+                entry.pop("metadata", None)
+                quarantined.append(entry)
+            # Exclusions: read-only mirror so the user can see the
+            # complete effective exclusion set in one place. Writing
+            # service exclusions is a future IPC command, not a read.
+            exclusions = [dict(row) for row in self.database.list_exclusions()]
         try:
             from utils import paths
 
@@ -546,6 +561,8 @@ class ProtectionServiceCore:
         return {
             "scans": scans,
             "threats": threats,
+            "quarantined": quarantined,
+            "exclusions": exclusions,
             "database": db_path,
             "pid": os.getpid(),
         }

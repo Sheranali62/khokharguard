@@ -236,8 +236,33 @@ class FileAnalyzer:
         )
 
     def _analyze_member(self, member_path: Path, risk: RiskEngine) -> None:
-        """Analyse an archive member as a child of the parent file."""
+        """Analyse an archive member as a child of the parent file.
+
+        YARA also runs here over the member's bytes via
+        :meth:`YaraEngine.scan_data` so content rules cover files
+        inside archives regardless of their extension - the classic
+        dropper pattern is a rule-matching script hidden in a ZIP.
+        The in-memory scan avoids on-access scanner interference with
+        freshly written temp files and needs no second disk read.
+        """
         child = self.analyze_path(member_path)
+        # YARA over the member bytes (all types, not only the
+        # extension-eligible set used for top-level files).
+        if self.yara.available:
+            try:
+                data = member_path.read_bytes()
+            except OSError:
+                data = b""
+            if data:
+                member_matches = self.yara.scan_data(data) or []
+            else:
+                member_matches = []
+            for match in member_matches:
+                risk.force_score(
+                    100 if match.severity in {"high", "critical"} else 70,
+                    "yara_rule_match",
+                    f"archive member: YARA rule '{match.rule}' matched",
+                )
         for factor in child.factors:
             detail = str(factor.get("detail", ""))
             name = str(factor.get("factor", ""))

@@ -229,7 +229,8 @@ class SettingsPage(ttk.Frame):
                   style="CardDim.TLabel", wraplength=700,
                   justify="left").pack(anchor="w", pady=(0, 8))
 
-        columns = {"type": ("Type", 90, "w"), "value": ("Value", 420, "w")}
+        columns = {"type": ("Type", 90, "w"), "value": ("Value", 380, "w"),
+                   "scope": ("Scope", 70, "w")}
         self.exclusions_tree = ttk.Treeview(exclusions, columns=list(columns),
                                             show="headings", height=5)
         for col_id, (text, width, anchor) in columns.items():
@@ -464,11 +465,20 @@ class SettingsPage(ttk.Frame):
                                       parent=self)
 
     def _remove_exclusion(self) -> None:
-        """Remove the selected exclusion."""
+        """Remove the selected exclusion (local scope only)."""
         selection = self.exclusions_tree.selection()
         if not selection:
             return
         values = self.exclusions_tree.item(selection[0], "values")
+        if len(values) >= 3 and values[2] == "service":
+            import tkinter.messagebox as messagebox
+
+            messagebox.showinfo(
+                "LocalGuard",
+                "This exclusion is defined in the background service's "
+                "own scope and is shown read-only here.",
+                parent=self)
+            return
         self.app.remove_exclusion_by_value(str(values[0]), str(values[1]))
         self.refresh()
 
@@ -489,8 +499,13 @@ class SettingsPage(ttk.Frame):
         self._service_refresh()
         for item in self.exclusions_tree.get_children():
             self.exclusions_tree.delete(item)
-        for record in self.app.list_exclusions():
+        for record in self.app.list_exclusions_merged():
+            # Service-scope exclusions are shown read-only with a
+            # scope marker; the Remove button only acts on local rows.
+            scope = ("service" if record.get("origin") == "service"
+                     else "local")
             self.exclusions_tree.insert("", "end", values=(
                 str(record.get("exclusion_type", "")),
                 str(record.get("value", "")),
+                scope,
             ))
