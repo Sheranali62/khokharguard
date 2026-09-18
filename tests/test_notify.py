@@ -206,16 +206,29 @@ def test_master_switch_disables_every_kind(test_settings):
 
 
 def test_configured_rate_limit_is_used(test_settings):
-    """The configured per-kind window replaces the default."""
-    from utils.notify import invalidate_preferences
+    """The configured per-kind window replaces the default.
+
+    The rate memory is primed with a delivery 10 s ago. With the
+    configured 3600 s window the next call must be suppressed - with
+    the 5 s default it would have delivered. This stays deterministic
+    regardless of test ordering: a stray "shown" timestamp from
+    anywhere else in the suite only reinforces the suppression.
+    """
+    import time as _time
+
+    from utils.notify import get_rate_limits, invalidate_preferences
 
     provider = RecordingProvider()
     set_tray_provider(provider)
     test_settings.set("notifications.rate_limit_scan_complete", 3600.0)
     invalidate_preferences()
+    assert get_rate_limits()["scan_complete"] == 3600.0
 
-    assert notify("scan_complete", "t", "first") is True
-    assert notify("scan_complete", "t", "second") is False
+    with notify_module._lock:
+        notify_module._last_shown["scan_complete"] = _time.monotonic() - 10.0
+
+    assert notify("scan_complete", "t", "within window") is False
+    assert notify("scan_complete", "t", "urgent", force=True) is True
     assert len(provider.calls) == 1
 
 
