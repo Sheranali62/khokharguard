@@ -270,7 +270,12 @@ def test_missing_settings_store_uses_defaults(monkeypatch):
         """Simulate a broken settings store."""
         raise RuntimeError("no settings")
 
-    monkeypatch.setattr("utils.settings.get_settings", boom)
+    # Patch the module notify() actually resolves get_settings from
+    # (a function-local import from utils.settings), and stale the
+    # cache so the next snapshot really hits the broken store.
+    import utils.settings as settings_module
+
+    monkeypatch.setattr(settings_module, "get_settings", boom)
     with notify_module._settings_lock:
         notify_module._settings_loaded_at = 0.0
 
