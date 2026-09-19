@@ -209,3 +209,11 @@ Initial release.
   deployments should add cryptographic signing on top.
 
 [1.0.0]: https://example.invalid/khokharguard/releases/tag/v1.0.0
+
+## [1.1.1] - 2026-09-19
+### Fixed
+- GUI exit no longer crashes with `NameError: logger` (present since v1.0.0; only the GUI path was affected).
+- Frozen-build logging: dict-argument log lines render again on Python 3.12 builds (SanitizingFilter kept LogRecord mapping arguments intact).
+- Update signing keys are read byte-exactly; hex/base64 key files supported; invalid key files fail with clear errors (ends the intermittent signature-verification "flakes").
+### Added
+- Migration summary dialog links to the bundled full upgrade guide (docs/UPGRADING.md).
