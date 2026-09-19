@@ -10,17 +10,19 @@ Scope and safety:
     - Verification is the security-critical path: when a public key is
       installed, update manifests are refused unless their signature
       validates. The implementation follows the RFC 8032 reference
-      shape and is validated in the test suite against the RFC's own
-      test vectors.
+      shape (twisted Edwards curve, extended homogeneous coordinates,
+      standard add/double formulas) and is validated in the test suite
+      against the RFC's own test vectors.
     - ``sign``/``public_key_from_secret`` exist for maintainers
       preparing update manifests (and for the test suite); the
       application itself never signs anything at runtime.
     - Deliberately small, auditable, and dependency-free. Used only
       for update authentication - never on the scanning hot path.
 
-Verification only on the runtime path; errors (wrong lengths, points
-not on the curve, malformed encodings) return ``False`` rather than
-raising, so a malformed manifest can never crash the update check.
+Verification never raises: malformed inputs (wrong lengths, points not
+on the curve, malformed encodings, non-canonical scalars) return
+``False`` rather than raising, so a malformed manifest can never crash
+the update check.
 """
 
 from __future__ import annotations
@@ -32,7 +34,12 @@ from typing import Tuple
 _Q = 2 ** 255 - 19                     # field prime
 _L = 2 ** 252 + 27742317777372353535851937790883648493   # group order
 _D = (-121665 * pow(121666, _Q - 2, _Q)) % _Q            # curve constant
+_2D = (2 * _D) % _Q
 _I = pow(2, (_Q - 1) // 4, _Q)                           # sqrt(-1) mod q
+
+# Points are (X, Y, Z, T) in extended coordinates:
+# x = X/Z, y = Y/Z, T = XY/Z. The neutral element is (0, 1, 1, 0).
+_Point = Tuple[int, int, int, int]
 
 
 def _sha512(data: bytes) -> bytes:
@@ -46,8 +53,8 @@ def _inv(x: int) -> int:
 
 
 def _xrecover(y: int) -> int:
-    """Recover x from y on the twisted Edwards curve."""
-    xx = (y * y - 1) * _inv(_D * y * y + 1)
+    """Recover x from y on the twisted Edwards curve (a = -1, d)."""
+    xx = (y * y - 1) * _inv(_D * y * y + 1) % _Q
     x = pow(xx, (_Q + 3) // 8, _Q)
     if (x * x - xx) % _Q != 0:
         x = (x * _I) % _Q
@@ -56,29 +63,50 @@ def _xrecover(y: int) -> int:
     return x
 
 
-def _edwards_add(p: Tuple[int, int], q: Tuple[int, int]) -> Tuple[int, int]:
-    """Point addition on the Edwards curve (affine, RFC 8032 formulas)."""
-    x1, y1 = p
-    x2, y2 = q
-    x3 = (x1 * y2 + x2 * y1) * _inv(1 + _D * x1 * x2 * y1 * y2)
-    y3 = (y1 * y2 + x1 * x2) * _inv(1 - _D * x1 * x2 * y1 * y2)
-    return (x3 % _Q, y3 % _Q)
+def _point_add(p: _Point, q: _Point) -> _Point:
+    """Unified addition for a = -1 twisted Edwards (add-2008-hwcd-3)."""
+    x1, y1, z1, t1 = p
+    x2, y2, z2, t2 = q
+    a = (y1 - x1) * (y2 - x2) % _Q
+    b = (y1 + x1) * (y2 + x2) % _Q
+    c = t1 * _2D * t2 % _Q
+    d = z1 * z2 % _Q
+    d = (d + d) % _Q
+    e = (b - a) % _Q
+    f = (d - c) % _Q
+    g = (d + c) % _Q
+    h = (b + a) % _Q
+    return (e * f % _Q, g * h % _Q, f * g % _Q, e * h % _Q)
 
 
-def _scalarmult(point: Tuple[int, int], scalar: int) -> Tuple[int, int]:
-    """Double-and-add scalar multiplication (iterative)."""
-    result = (0, 1)  # neutral element
-    addend = point
-    while scalar > 0:
-        if scalar & 1:
-            result = _edwards_add(result, addend)
-        addend = _edwards_add(addend, addend)
-        scalar >>= 1
+def _point_double(p: _Point) -> _Point:
+    """Doubling for a = -1 twisted Edwards (dbl-2008-hwcd)."""
+    x1, y1, z1, _t1 = p
+    a = x1 * x1 % _Q
+    b = y1 * y1 % _Q
+    c = 2 * z1 * z1 % _Q
+    e = ((x1 + y1) * (x1 + y1) - a - b) % _Q
+    g = (b - a) % _Q
+    f = (g - c) % _Q
+    h = (-a - b) % _Q
+    return (e * f % _Q, g * h % _Q, f * g % _Q, e * h % _Q)
+
+
+def _scalarmult(point: _Point, scalar: int) -> _Point:
+    """Double-and-add scalar multiplication (MSB first)."""
+    result = (0, 1, 1, 0)  # neutral element
+    if scalar <= 0:
+        return result
+    bits = bin(scalar)[2:]
+    for bit in bits:
+        result = _point_double(result)
+        if bit == "1":
+            result = _point_add(result, point)
     return result
 
 
 def _is_on_curve(point: Tuple[int, int]) -> bool:
-    """True when the point satisfies the curve equation."""
+    """True when the affine point satisfies -x^2 + y^2 = 1 + dx^2y^2."""
     x, y = point
     return (-x * x + y * y - 1 - _D * x * x * y * y) % _Q == 0
 
@@ -93,41 +121,55 @@ def _encodeint(value: int) -> bytes:
     return value.to_bytes(32, "little")
 
 
-def _decodepoint(data: bytes) -> Tuple[int, int]:
+def _decodepoint(data: bytes) -> _Point:
     """Decode a 32-byte point encoding; raises ValueError when invalid."""
     y = _decodeint(data) & ((1 << 255) - 1)
     x = _xrecover(y)
     if x & 1 != (data[31] >> 7) & 1:
         x = _Q - x
-    point = (x, y)
-    if not _is_on_curve(point):
+    if not _is_on_curve((x, y)):
         raise ValueError("point not on curve")
-    return point
+    return (x, y, 1, x * y % _Q)
 
 
-def _encodepoint(point: Tuple[int, int]) -> bytes:
-    """Encode a point as 32 bytes (y with the x parity bit on top)."""
-    x, y = point
-    return _encodeint(y | ((x & 1) << 255))
+def _encodepoint(point: _Point) -> bytes:
+    """Encode an extended point as 32 bytes (y with the x parity bit)."""
+    x, y, z, _t = point
+    z_inv = _inv(z)
+    x_affine = x * z_inv % _Q
+    y_affine = y * z_inv % _Q
+    return _encodeint(y_affine | ((x_affine & 1) << 255))
 
 
-# Base point B, computed after the helpers above are defined.
+def _points_equal(p: _Point, q: _Point) -> bool:
+    """Affine equality of two points in extended coordinates."""
+    x1, y1, z1, _t1 = p
+    x2, y2, z2, _t2 = q
+    return (x1 * z2 - x2 * z1) % _Q == 0 and \
+        (y1 * z2 - y2 * z1) % _Q == 0
+
+
+# Base point B: the unique point with y = 4/5 and even x.
 _BY = (4 * pow(5, _Q - 2, _Q)) % _Q
-_BX = _xrecover(_BY) % _Q
-_B = (_BX, _BY)
+_BX = _xrecover(_BY)
+_B = (_BX % _Q, _BY, 1, _BX * _BY % _Q)
+
+
+def _clamp(secret_key: bytes) -> int:
+    """Clamped scalar derived from the first half of SHA-512(secret)."""
+    digest = _sha512(secret_key)
+    clamped = bytearray(digest[:32])
+    clamped[0] &= 248
+    clamped[31] &= 127
+    clamped[31] |= 64
+    return _decodeint(bytes(clamped))
 
 
 def public_key_from_secret(secret_key: bytes) -> bytes:
     """Derive the 32-byte public key for a 32-byte secret key."""
     if len(secret_key) != 32:
         raise ValueError("Ed25519 secret keys are 32 bytes")
-    digest = _sha512(secret_key)
-    clamped = bytearray(digest[:32])
-    clamped[0] &= 248
-    clamped[31] &= 127
-    clamped[31] |= 64
-    scalar = _decodeint(bytes(clamped))
-    return _encodepoint(_scalarmult(_B, scalar))
+    return _encodepoint(_scalarmult(_B, _clamp(secret_key)))
 
 
 def sign(secret_key: bytes, message: bytes) -> Tuple[bytes, bytes]:
@@ -139,14 +181,9 @@ def sign(secret_key: bytes, message: bytes) -> Tuple[bytes, bytes]:
     if len(secret_key) != 32:
         raise ValueError("Ed25519 secret keys are 32 bytes")
     public_key = public_key_from_secret(secret_key)
+    scalar = _clamp(secret_key)
 
     digest = _sha512(secret_key)
-    clamped = bytearray(digest[:32])
-    clamped[0] &= 248
-    clamped[31] &= 127
-    clamped[31] |= 64
-    scalar = _decodeint(bytes(clamped))
-
     nonce = _decodeint(_sha512(digest[32:64] + message)) % _L
     r_encoded = _encodepoint(_scalarmult(_B, nonce))
     challenge = _decodeint(_sha512(r_encoded + public_key + message)) % _L
@@ -170,7 +207,8 @@ def verify(public_key: bytes, signature: bytes, message: bytes) -> bool:
             return False  # non-canonical scalar (malleability guard)
         challenge = _decodeint(
             _sha512(signature[:32] + public_key + message))
-        return _scalarmult(_B, s_value) == _edwards_add(
-            r_point, _scalarmult(a_point, challenge))
+        return _points_equal(
+            _scalarmult(_B, s_value),
+            _point_add(r_point, _scalarmult(a_point, challenge)))
     except Exception:  # noqa: BLE001 - malformed input is just invalid
         return False

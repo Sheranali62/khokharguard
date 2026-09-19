@@ -150,25 +150,28 @@ class ProtectionManager:
         # Trusted drives (user-approved by serial + volume label) skip
         # the automatic rescan; scanning stays available from the USB
         # page at any time. Unidentifiable drives are never trusted.
+        trusted = False
         try:
             database = self.database
             if database is None:
                 from database.database import get_database
 
                 database = get_database()
-            if device.serial and database.is_usb_trusted(
-                    device.serial, device.volume_name):
-                logger.info(
-                    "USB device %s (%s) is trusted - skipping auto-scan",
-                    device.drive_letter, device.volume_name)
-                from utils.notify import notify
-
-                notify("usb_detected", "KhokharGuard - USB connected",
-                       f"{device.drive_letter} {device.volume_name} is a "
-                       "trusted device - auto-scan skipped")
-                return
+            trusted = bool(device.serial and database.is_usb_trusted(
+                device.serial, device.volume_name))
         except Exception:  # noqa: BLE001 - trust check must never break USB handling
             logger.exception("USB trust check failed; scanning anyway")
+
+        if trusted:
+            logger.info(
+                "USB device %s (%s) is trusted - skipping auto-scan",
+                device.drive_letter, device.volume_name)
+            from utils.notify import notify
+
+            notify("usb_detected", "KhokharGuard - USB connected",
+                   f"{device.drive_letter} {device.volume_name} is a "
+                   "trusted device - auto-scan skipped")
+            return
 
         logger.info("Auto-scanning inserted USB device %s", device.drive_letter)
         self._scan_usb_async(device)
