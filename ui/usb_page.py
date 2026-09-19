@@ -83,6 +83,14 @@ class USBPage(ttk.Frame):
         self.scan_btn.pack(side="left")
         add_tooltip(self.scan_btn,
                     "Scan the selected drive for malware and suspicious files")
+        self.trust_btn = ttk.Button(device_btn_row, text="Trust This Device",
+                                    command=self._trust_selected,
+                                    state="disabled")
+        self.trust_btn.pack(side="left", padx=(8, 0))
+        add_tooltip(self.trust_btn,
+                    "Remember this drive (by serial and volume label) and "
+                    "skip automatic rescans of it. Scanning stays available "
+                    "here at any time.")
 
         # Known devices history card
         history_card = Card(container)
@@ -100,6 +108,37 @@ class USBPage(ttk.Frame):
         }
         self.known_tree = make_treeview(history_card, known_columns, heights=5)
         self.known_tree._scrollframe.pack(fill="both", expand=True)
+
+        # Trusted devices card
+        trusted_card = Card(container)
+        trusted_card.pack(fill="both", expand=True)
+        ttk.Label(trusted_card, text="TRUSTED DEVICES",
+                  style="H2.TLabel").pack(anchor="w", pady=(0, 6))
+        ttk.Label(
+            trusted_card,
+            text="Trusted drives skip the automatic scan when inserted. "
+                 "Trust is tied to the drive's serial number and volume "
+                 "label, so a different drive is never trusted by accident.",
+            style="CardDim.TLabel", wraplength=780, justify="left",
+        ).pack(anchor="w", pady=(0, 6))
+
+        trusted_columns = {
+            "name": ("Volume Name", 180, "w"),
+            "serial": ("Serial", 120, "w"),
+            "label": ("Note", 220, "w"),
+            "since": ("Trusted Since", 170, "w"),
+        }
+        self.trusted_tree = make_treeview(trusted_card, trusted_columns,
+                                          heights=4)
+        self.trusted_tree._scrollframe.pack(fill="both", expand=True)
+
+        trusted_btn_row = ttk.Frame(trusted_card, style="Card.TFrame")
+        trusted_btn_row.pack(fill="x", pady=(8, 0))
+        ttk.Button(trusted_btn_row, text="Revoke Trust",
+                   command=self._untrust_selected).pack(side="left")
+        add_tooltip(
+            trusted_btn_row.children["!button"],
+            "Remove trust so this drive is scanned automatically again")
 
     # ------------------------------------------------------------------
     # Actions
@@ -121,6 +160,54 @@ class USBPage(ttk.Frame):
         drive_letter = str(values[0])
         self.app.start_usb_scan(drive_letter)
 
+    def _trust_selected(self) -> None:
+        """Trust the selected drive (by serial + volume label)."""
+        selection = self.device_tree.selection()
+        if not selection:
+            tk.messagebox.showinfo("LocalGuard",
+                                   "Select a removable drive first.", parent=self)
+            return
+        index = self.device_tree.index(selection[0])
+        if index >= len(self._devices):
+            return
+        device = self._devices[index]
+        serial = str(device.get("serial", "") or "")
+        volume = str(device.get("volume_name", "") or "")
+        if not serial or not volume:
+            tk.messagebox.showwarning(
+                "LocalGuard",
+                "This drive cannot be identified reliably (no serial or "
+                "volume label), so it cannot be trusted. It will be "
+                "scanned automatically every time.", parent=self)
+            return
+        self.app.database.trust_usb_device(serial, volume, volume)
+        self.app.database.add_event(
+            "usb_trust_granted",
+            f"USB device trusted: {device.get('drive_letter')} "
+            f"'{volume}' (serial {serial}) - auto-scan skipped for it")
+        self.refresh()
+
+    def _untrust_selected(self) -> None:
+        """Revoke trust for the selected trusted device."""
+        selection = self.trusted_tree.selection()
+        if not selection:
+            tk.messagebox.showinfo(
+                "LocalGuard", "Select a trusted device first.", parent=self)
+            return
+        values = self.trusted_tree.item(selection[0], "values")
+        serial, volume = str(values[1]), str(values[0])
+        if not tk.messagebox.askyesno(
+                "LocalGuard",
+                f"Stop trusting '{volume}' (serial {serial})?\n\n"
+                "It will be scanned automatically on every insertion.",
+                parent=self):
+            return
+        self.app.database.untrust_usb_device(serial, volume)
+        self.app.database.add_event(
+            "usb_trust_revoked",
+            f"USB device trust revoked: '{volume}' (serial {serial})")
+        self.refresh()
+
     # ------------------------------------------------------------------
     # Refresh
     # ------------------------------------------------------------------
@@ -134,19 +221,26 @@ class USBPage(ttk.Frame):
             self.known_tree.delete(item)
 
         self._devices = self.app.list_usb_devices()
+        trusted = {
+            (str(r.get("serial", "")), str(r.get("volume_name", "")))
+            for r in self.app.database.list_trusted_usb_devices()
+        }
         for device in self._devices:
             capacity = device.get("capacity_bytes")
             free = device.get("free_bytes")
+            identity = (str(device.get("serial", "") or ""),
+                        str(device.get("volume_name", "") or ""))
             values = (
                 str(device.get("drive_letter", "")),
                 str(device.get("volume_name", "") or "(no label)"),
                 self._fmt_bytes(capacity),
                 self._fmt_bytes(free),
                 str(device.get("file_system", "") or "?"),
-                "NOT SCANNED",
+                "TRUSTED" if identity in trusted else "NOT SCANNED",
             )
             self.device_tree.insert("", "end", values=values)
             self.scan_btn.configure(state="normal" if self._devices else "disabled")
+            self.trust_btn.configure(state="normal" if self._devices else "disabled")
 
         for record in self.app.list_known_usb_records():
             self.known_tree.insert("", "end", values=(
@@ -156,6 +250,16 @@ class USBPage(ttk.Frame):
                 str(record.get("last_seen", "")),
                 str(record.get("last_scan_time", "") or "never"),
                 str(record.get("last_scan_status", "not_scanned")),
+            ))
+
+        for item in self.trusted_tree.get_children():
+            self.trusted_tree.delete(item)
+        for record in self.app.database.list_trusted_usb_devices():
+            self.trusted_tree.insert("", "end", values=(
+                str(record.get("volume_name", "") or "(no label)"),
+                str(record.get("serial", "") or "-"),
+                str(record.get("label", "") or ""),
+                str(record.get("trusted_at", "")),
             ))
 
     @staticmethod

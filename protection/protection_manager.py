@@ -14,6 +14,7 @@ from typing import Callable, Dict, List, Optional
 
 from engine.file_analyzer import Detection, FileAnalyzer
 from engine.scan_controller import ScanController
+from protection.canary import CanaryMonitor, monitor_from_settings
 from protection.realtime_monitor import RealTimeMonitor, resolve_watch_locations
 from protection.usb_monitor import USBDevice, USBMonitor
 from utils import get_logger
@@ -25,13 +26,18 @@ logger = get_logger("protection_manager")
 class ProtectionManager:
     """Starts/stops protection components per settings."""
 
-    def __init__(self, analyzer: FileAnalyzer, scan_controller: ScanController) -> None:
+    def __init__(self, analyzer: FileAnalyzer, scan_controller: ScanController,
+                 database=None) -> None:
         self.analyzer = analyzer
         self.scan_controller = scan_controller
         self.settings = get_settings()
+        # Used for the USB trusted-device lookup; resolved lazily so
+        # tests can inject an isolated database.
+        self.database = database
 
         self.usb_monitor = USBMonitor(on_inserted=self._on_usb_inserted)
         self.realtime_monitor: Optional[RealTimeMonitor] = None
+        self.canary_monitor: Optional[CanaryMonitor] = None
 
         self._paused = False
         self._lock = threading.Lock()
@@ -53,6 +59,9 @@ class ProtectionManager:
 
             if self.settings.get("protection.realtime_enabled", True):
                 self._start_realtime()
+
+            if self.settings.get("protection.canary_enabled", True):
+                self._start_canary()
         self._notify_state_changed()
 
     def _start_realtime(self) -> None:
@@ -69,6 +78,12 @@ class ProtectionManager:
         )
         self.realtime_monitor.start()
 
+    def _start_canary(self) -> None:
+        """Build and start the ransomware canary monitor from settings."""
+        self.canary_monitor = monitor_from_settings(
+            on_tampered=self._on_canary_tampered)
+        self.canary_monitor.start()
+
     def stop(self) -> None:
         """Stop all protection components."""
         with self._lock:
@@ -76,6 +91,9 @@ class ProtectionManager:
             if self.realtime_monitor is not None:
                 self.realtime_monitor.stop()
                 self.realtime_monitor = None
+            if self.canary_monitor is not None:
+                self.canary_monitor.stop()
+                self.canary_monitor = None
         self._notify_state_changed()
 
     def pause_protection(self) -> None:
@@ -86,6 +104,8 @@ class ProtectionManager:
                 self.realtime_monitor.stop()
             if self.usb_monitor.running:
                 self.usb_monitor.stop()
+            if self.canary_monitor is not None and self.canary_monitor.running:
+                self.canary_monitor.stop()
         self._notify_state_changed()
 
     def resume_protection(self) -> None:
@@ -124,9 +144,34 @@ class ProtectionManager:
         if self._paused:
             return
 
-        if self.settings.get("protection.usb_autoscan", True):
-            logger.info("Auto-scanning inserted USB device %s", device.drive_letter)
-            self._scan_usb_async(device)
+        if not self.settings.get("protection.usb_autoscan", True):
+            return
+
+        # Trusted drives (user-approved by serial + volume label) skip
+        # the automatic rescan; scanning stays available from the USB
+        # page at any time. Unidentifiable drives are never trusted.
+        try:
+            database = self.database
+            if database is None:
+                from database.database import get_database
+
+                database = get_database()
+            if device.serial and database.is_usb_trusted(
+                    device.serial, device.volume_name):
+                logger.info(
+                    "USB device %s (%s) is trusted - skipping auto-scan",
+                    device.drive_letter, device.volume_name)
+                from utils.notify import notify
+
+                notify("usb_detected", "LocalGuard - USB connected",
+                       f"{device.drive_letter} {device.volume_name} is a "
+                       "trusted device - auto-scan skipped")
+                return
+        except Exception:  # noqa: BLE001 - trust check must never break USB handling
+            logger.exception("USB trust check failed; scanning anyway")
+
+        logger.info("Auto-scanning inserted USB device %s", device.drive_letter)
+        self._scan_usb_async(device)
 
     def _scan_usb_async(self, device: USBDevice) -> None:
         """Start a USB scan in the shared scan controller."""
@@ -173,6 +218,18 @@ class ProtectionManager:
             except Exception:  # noqa: BLE001
                 logger.exception("on_threat callback error")
 
+    def _on_canary_tampered(self, path: Path) -> None:
+        """Alert the user that a ransomware canary was touched."""
+        from utils.notify import notify
+
+        notify(
+            "threat_detected",
+            "LocalGuard - RANSOMWARE WARNING",
+            f"A watched canary file changed: {path}. Something may be "
+            "encrypting your files - review and quarantine now.",
+            force=True,
+        )
+
     def _auto_quarantine(self, detection: Detection) -> object:
         """Auto-quarantine signature-confirmed threats only."""
         try:
@@ -210,5 +267,8 @@ class ProtectionManager:
             "watch_locations": (
                 [str(p) for p in self.realtime_monitor.locations]
                 if self.realtime_monitor else []
+            ),
+            "canary_enabled": (
+                self.canary_monitor is not None and self.canary_monitor.running
             ),
         }

@@ -54,9 +54,18 @@ It works fully offline.
 - **USB protection** — insertion detection with auto-scan, plus
   targeted analysis of `autorun.inf`, shortcut structures,
   double-extension files (`invoice.pdf.exe`), and hidden executables.
+  Trusted devices (by serial **and** volume label) can skip automatic
+  rescans; unidentifiable drives can never be trusted.
 - **Real-time monitoring** — watchdog-based (with polling fallback)
   watching Downloads/Desktop/Temp for new suspicious files.
   Auto-quarantine applies **only** to signature-confirmed threats.
+- **Ransomware canaries** — harmless decoy documents in
+  Documents/Desktop/Pictures; touching one raises an immediate warning
+  and a critical security event (an early bulk-encryption indicator,
+  not a guarantee).
+- **Incremental scans** — clean verdicts are cached (path + size +
+  mtime + signature version), so repeat scans skip unchanged files.
+  Threats are never cached; signature updates invalidate the cache.
 - **Persistence analysis** — startup folders, registry Run/RunOnce
   keys, scheduled tasks, and Windows services, each with evidence-based
   risk flags. Nothing is removed automatically; cleanups snapshot a
@@ -69,6 +78,11 @@ It works fully offline.
   paused and warning states are always visible in the tooltip and menu.
 - **Detection self-test** — one-click EICAR test on the About page
   (see below).
+- **Signature updates (optional)** — everything works offline; if you
+  configure an HTTPS update URL, manifests are size-capped, every file
+  is hash-verified, paths are traversal-guarded, and (when a signing
+  public key is installed) Ed25519-signed manifests are enforced.
+  Versioned backups allow one-click rollback from Settings.
 - **Reports** — TXT / CSV / JSON export per scan; security event log.
 - **Privacy** — telemetry OFF, cloud reputation OFF, file uploads OFF.
   No network access is required at any point.

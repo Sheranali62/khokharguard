@@ -11,7 +11,9 @@
     "realtime_watch_locations": ["downloads", "desktop", "temp"],
     "usb_autoscan": true,
     "auto_quarantine": false,
-    "scan_archives": true
+    "scan_archives": true,
+    "canary_enabled": true,
+    "canary_poll_interval": 10.0
   },
   "notifications": {
     "enable_usb_detected": true,

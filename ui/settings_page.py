@@ -81,6 +81,12 @@ class SettingsPage(ttk.Frame):
                     "protection.scan_archives",
                     tooltip="Inspect ZIP/7z/RAR/TAR contents with strict "
                             "bomb-protection limits")
+        self._check(protection, "Ransomware canary files",
+                    "protection.canary_enabled",
+                    tooltip="Plant harmless decoy documents in "
+                            "Documents/Desktop/Pictures and warn "
+                            "immediately when something modifies them "
+                            "- an early ransomware warning")
 
         # --- Notifications ---
         notif = Card(container)
@@ -217,6 +223,54 @@ class SettingsPage(ttk.Frame):
             self._service_start_btn,
             "Starts background real-time and USB protection that keeps "
             "running when the LocalGuard window is closed.")
+
+        # --- Updates ---
+        updates = Card(container)
+        updates.pack(fill="x", in_=container, **pad)
+        ttk.Label(updates, text="SIGNATURE UPDATES", style="H2.TLabel").pack(
+            anchor="w", pady=(0, 4))
+        ttk.Label(
+            updates,
+            text="Signature updates are optional; LocalGuard works fully "
+                 "offline. Updates are fetched over HTTPS and verified "
+                 "before installation. If a signing public key is "
+                 "installed, only cryptographically signed update "
+                 "manifests are accepted.",
+            style="CardDim.TLabel", wraplength=700, justify="left",
+        ).pack(anchor="w", pady=(0, 6))
+
+        self._check(updates, "Enable signature updates",
+                    "updates.signature_updates_enabled")
+
+        url_row = ttk.Frame(updates, style="Card.TFrame")
+        url_row.pack(fill="x", pady=4)
+        ttk.Label(url_row, text="Update URL:",
+                  style="CardDim.TLabel").pack(side="left")
+        self.update_url_var = tk.StringVar(
+            value=str(self.app.settings.get("updates.update_url", "")))
+        url_entry = ttk.Entry(url_row, textvariable=self.update_url_var,
+                              width=48)
+        url_entry.pack(side="left", padx=8)
+        add_tooltip(url_entry,
+                    "HTTPS URL of the update manifest. Leave empty for "
+                    "offline use.")
+        ttk.Button(url_row, text="Save",
+                   command=self._save_update_url).pack(side="left")
+
+        update_btn_row = ttk.Frame(updates, style="Card.TFrame")
+        update_btn_row.pack(fill="x", pady=(4, 0))
+        ttk.Button(update_btn_row, text="Check Now",
+                   command=self._check_updates).pack(side="left", padx=(0, 8))
+        self.rollback_btn = ttk.Button(update_btn_row, text="Roll Back Last Update",
+                                       command=self._rollback_updates)
+        self.rollback_btn.pack(side="left")
+        add_tooltip(self.rollback_btn,
+                    "Restore the previous signature set if an update "
+                    "causes problems")
+        self._update_status = ttk.Label(updates, text="", wraplength=700,
+                                        justify="left",
+                                        style="CardDim.TLabel")
+        self._update_status.pack(anchor="w", pady=(6, 0))
 
         # --- Exclusions ---
         exclusions = Card(container)
@@ -429,6 +483,137 @@ class SettingsPage(ttk.Frame):
     # ------------------------------------------------------------------
     # Exclusions
     # ------------------------------------------------------------------
+
+    def _save_update_url(self) -> None:
+        """Persist the update manifest URL (HTTPS enforced on use)."""
+        import tkinter.messagebox as messagebox
+
+        url = self.update_url_var.get().strip()
+        if url and not url.lower().startswith("https://"):
+            messagebox.showwarning(
+                "LocalGuard",
+                "Update URLs must use HTTPS for security. The URL was "
+                "not saved.", parent=self)
+            self.update_url_var.set("")
+            return
+        self.app.settings.set("updates.update_url", url)
+
+    def _check_updates(self) -> None:
+        """Check the configured URL for newer signatures (worker)."""
+        import tkinter.messagebox as messagebox
+
+        if not self.app.settings.get(
+                "updates.signature_updates_enabled", True):
+            messagebox.showinfo(
+                "LocalGuard",
+                "Signature updates are disabled in Settings.", parent=self)
+            return
+
+        self._update_status.configure(text="Checking for updates...",
+                                      style="Card.TLabel")
+
+        def worker() -> None:
+            """Network round-trip off the UI thread."""
+            from services.update_service import UpdateService
+
+            result = UpdateService().check_for_updates()
+            self.app.ui_call(lambda: self._show_update_result(result))
+
+        self.app.run_background(worker, "Checking for signature updates...")
+
+    def _show_update_result(self, result: dict) -> None:
+        """Render the update check result on the UI thread."""
+        import tkinter.messagebox as messagebox
+
+        if result.get("error"):
+            self._update_status.configure(
+                text=f"Check failed: {result['error']}",
+                style="CardDim.TLabel")
+            return
+        version = str(result.get("version"))
+        if not result.get("available"):
+            self._update_status.configure(
+                text=f"Signatures are up to date (version {version}).",
+                style="CardDim.TLabel")
+            return
+        if messagebox.askyesno(
+                "LocalGuard",
+                f"Signature update {version} is available.\n\n"
+                "Download and install it now?",
+                parent=self):
+            self._install_updates(result.get("manifest"))
+        else:
+            self._update_status.configure(
+                text=f"Update {version} available (not installed).",
+                style="CardDim.TLabel")
+
+    def _install_updates(self, manifest: dict) -> None:
+        """Download, verify, and install the update (worker)."""
+        self._update_status.configure(text="Installing update...",
+                                      style="Card.TLabel")
+
+        def worker() -> None:
+            """Network + disk work off the UI thread."""
+            from services.update_service import UpdateService, UpdateError
+
+            try:
+                UpdateService().install_update(manifest)
+            except UpdateError as exc:
+                self.app.ui_call(lambda: self._update_status.configure(
+                    text=f"Update failed: {exc}", style="CardDim.TLabel"))
+                return
+            self.app.ui_call(self._after_update_installed)
+
+        self.app.run_background(worker, "Installing signature update...")
+
+    def _after_update_installed(self) -> None:
+        """Post-install refresh on the UI thread."""
+        import tkinter.messagebox as messagebox
+
+        from utils.settings import get_settings
+
+        version = get_settings().get("database.signature_db_version", "?")
+        self._update_status.configure(
+            text=f"Signature update {version} installed.",
+            style="Card.TLabel")
+        messagebox.showinfo(
+            "LocalGuard",
+            f"Signature update {version} installed.\n\n"
+            "New signatures are active immediately - no restart needed.",
+            parent=self)
+
+    def _rollback_updates(self) -> None:
+        """Restore the most recent signature backup (user confirmed)."""
+        import tkinter.messagebox as messagebox
+
+        from services.update_service import UpdateService
+
+        svc = UpdateService()
+        versions = svc.list_backups()
+        if not versions:
+            messagebox.showinfo(
+                "LocalGuard",
+                "No signature backups exist yet - nothing to roll back to.",
+                parent=self)
+            return
+        version = versions[0]
+        if not messagebox.askyesno(
+                "LocalGuard",
+                f"Restore signatures from backup version {version}?\n\n"
+                "The current signature set will be replaced.",
+                parent=self):
+            return
+        if svc.rollback(version):
+            self._update_status.configure(
+                text=f"Signatures restored to version {version}.",
+                style="Card.TLabel")
+            messagebox.showinfo(
+                "LocalGuard",
+                f"Signatures restored to version {version}.", parent=self)
+        else:
+            messagebox.showerror(
+                "LocalGuard", "Rollback failed - current signatures kept.",
+                parent=self)
 
     def _exclude_file(self) -> None:
         """Add a file exclusion."""

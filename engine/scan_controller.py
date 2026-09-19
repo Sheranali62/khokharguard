@@ -33,6 +33,12 @@ class ScanController:
         self.exclusions = exclusions
         self.threads = threads
 
+        # Incremental scan cache (clean verdicts). Created lazily on
+        # the first scan that has it enabled; invalidated whenever the
+        # signature database version changes.
+        self._scan_cache = None
+        self._cache_sig_version: Optional[str] = None
+
         self.state = ScanState()
         self.stats: Optional[ScanStatistics] = None
         self.scan_id: Optional[int] = None
@@ -75,6 +81,7 @@ class ScanController:
         scanner = Scanner(
             self.analyzer, exclusions=self.exclusions,
             threads=self.threads, state=self.state,
+            scan_cache=self._cache_for_scan(),
         )
 
         def run() -> None:
@@ -108,6 +115,53 @@ class ScanController:
         )
         self._thread.start()
         return self._thread
+
+    def _cache_for_scan(self):
+        """Return the ScanCache for this scan, or None when disabled.
+
+        Honours ``performance.skip_unchanged_files`` per scan so the
+        Settings toggle applies immediately. Only files that analyse
+        clean are cached, and everything is dropped when the signature
+        DB version changes - updated signatures must get a chance to
+        re-check previously-clean files.
+        """
+        from utils.settings import get_settings
+
+        if not get_settings().get(
+                "performance.skip_unchanged_files", True):
+            return None
+        if self.database is None:
+            return None
+        if self._scan_cache is None:
+            from engine.scan_cache import ScanCache
+
+            self._scan_cache = ScanCache(self.database, sig_version="0")
+        current_version = self._current_signature_version()
+        if current_version != self._cache_sig_version:
+            if self._cache_sig_version is not None:
+                logger.info(
+                    "Signature version changed (%s -> %s); "
+                    "invalidating scan cache",
+                    self._cache_sig_version, current_version)
+            self._scan_cache.retarget_signature_version(current_version)
+            self._cache_sig_version = current_version
+        return self._scan_cache
+
+    def _current_signature_version(self) -> str:
+        """Signature DB version used to stamp cache entries."""
+        try:
+            version = self.analyzer.signatures.version_label()
+            return str(version)
+        except Exception:  # noqa: BLE001 - fall back to settings
+            from utils.settings import get_settings
+
+            return str(get_settings().get(
+                "database.signature_db_version", "0"))
+
+    def invalidate_scan_cache(self) -> None:
+        """Drop all cached verdicts (e.g. after a signature update)."""
+        if self._scan_cache is not None:
+            self._scan_cache.clear()
 
     def pause(self) -> None:
         """Pause the running scan."""

@@ -76,6 +76,9 @@ class ScanStatistics:
         self.skipped = 0
         self.errors = 0
         self.bytes_scanned = 0
+        # Files verified from the incremental cache instead of being
+        # re-analysed (counted in files_scanned too).
+        self.cache_hits = 0
         self.start_time = time.monotonic()
         self.current_file = ""
         self.detections: List[Detection] = []
@@ -94,6 +97,7 @@ class ScanStatistics:
             "suspicious_found": self.suspicious_found,
             "skipped": self.skipped,
             "errors": self.errors,
+            "cache_hits": self.cache_hits,
             "elapsed": self.elapsed,
             "current_file": self.current_file,
         }
@@ -108,14 +112,19 @@ class Scanner:
         exclusions: Optional[object] = None,
         threads: int = 4,
         state: Optional[ScanState] = None,
+        scan_cache: Optional[object] = None,
     ) -> None:
         """
         ``exclusions`` is an object with ``is_excluded(path: Path) -> bool``.
+        ``scan_cache`` is an optional engine.scan_cache.ScanCache - when
+        given, files whose size+mtime match a cached clean verdict are
+        skipped (incremental scanning, spec section 34).
         """
         self.analyzer = analyzer
         self.exclusions = exclusions
         self.threads = max(1, min(threads, 16))
         self.state = state or ScanState()
+        self.scan_cache = scan_cache
 
     # ------------------------------------------------------------------
     # Target collection
@@ -211,8 +220,31 @@ class Scanner:
                 if deep_extensions_only and not self._deep_worthy(path):
                     stats.files_scanned += 1
                     return None
+                # Incremental: skip files whose cached verdict is still
+                # valid. Clean verdicts only; any stat change re-scans.
+                if self.scan_cache is not None:
+                    try:
+                        stat = path.stat()
+                    except OSError:
+                        stat = None
+                    if stat is not None and self.scan_cache.lookup(
+                            path, stat.st_size, stat.st_mtime_ns):
+                        stats.files_scanned += 1
+                        stats.cache_hits += 1
+                        return None
                 detection = self.analyzer.analyze_path(path)
                 stats.files_scanned += 1
+                if (
+                    self.scan_cache is not None
+                    and detection.severity in {"clean", "low"}
+                ):
+                    try:
+                        stat = path.stat()
+                    except OSError:
+                        stat = None
+                    if stat is not None:
+                        self.scan_cache.store_clean(
+                            path, stat.st_size, stat.st_mtime_ns)
                 if detection.severity in {"high", "critical"}:
                     if detection.detection_method == "signature":
                         stats.threats_found += 1

@@ -8,6 +8,37 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Ransomware canary files:** harmless decoy documents in
+  Documents/Desktop/Pictures, watched while protection runs. Any
+  modification or deletion of a decoy raises an immediate notification
+  and a critical `canary_tampered` security event, then re-plants the
+  decoy. Toggle in Settings > Protection; decoys explain themselves in
+  plain text and are always safe to delete.
+- **Incremental scanning:** a persistent cache of clean verdicts
+  (keyed by path, size, mtime, signature and engine version) lets
+  repeat scans skip files that have not changed. Only clean verdicts
+  are cached - threats and suspicious files are re-analysed every
+  scan - and any signature update invalidates the cache. Controlled by
+  the existing "Skip unchanged files" setting; live `cache_hits`
+  counter in scan progress.
+- **Verified signature update system (spec section 37):** HTTPS-only
+  fetches with hard size caps, per-file SHA-256 integrity, optional
+  Ed25519 manifest signing (drop a public key in
+  `signatures/update_public_key.pub` and unsigned manifests are
+  refused - includes an auditable, RFC 8032-vector-tested pure-Python
+  verifier in `utils/ed25519.py`), path-traversal guards, versioned
+  backups with rollback, and a Settings > Signature Updates section
+  (Check Now / Roll Back / update URL). YARA hot-reload and lazy hash
+  reload make new signatures active immediately.
+- **USB trusted-device allowlist:** drives trusted by serial number
+  AND volume label skip the automatic rescan on insertion; everything
+  else (including a different drive with the same label, or a spoofed
+  serial) still scans. Manage on the USB page (Trust / Revoke with
+  confirmation); unidentifiable drives can never be trusted; trust
+  changes are recorded in the security event log.
+
+### Added (previous)
+
 - **Authenticated quarantine actions over IPC:** the GUI can now ask the
   background service to restore or permanently delete service-quarantined
   items (`quarantine_restore` / `quarantine_delete`). The service refuses

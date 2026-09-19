@@ -497,6 +497,52 @@ class Database:
         return self.query("SELECT * FROM usb_devices ORDER BY last_seen DESC")
 
     # ------------------------------------------------------------------
+    # usb_trusted_devices
+    # ------------------------------------------------------------------
+
+    def is_usb_trusted(self, serial: str, volume_name: str) -> bool:
+        """True when this exact drive (serial + label) is user-trusted."""
+        row = self.query_one(
+            "SELECT 1 FROM usb_trusted_devices WHERE serial = ? "
+            "AND volume_name = ?",
+            (serial, volume_name),
+        )
+        return row is not None
+
+    def trust_usb_device(self, serial: str, volume_name: str,
+                         label: str = "") -> bool:
+        """Trust a drive for auto-scan skipping; False when invalid.
+
+        A drive without a serial cannot be identified reliably and is
+        never trusted.
+        """
+        serial = (serial or "").strip()
+        volume_name = (volume_name or "").strip()
+        if not serial or not volume_name:
+            return False
+        self.execute(
+            "INSERT OR IGNORE INTO usb_trusted_devices "
+            "(serial, volume_name, label) VALUES (?, ?, ?)",
+            (serial, volume_name, label),
+        )
+        return True
+
+    def untrust_usb_device(self, serial: str, volume_name: str) -> int:
+        """Revoke trust; returns rows removed."""
+        cur = self._execute(
+            "DELETE FROM usb_trusted_devices WHERE serial = ? "
+            "AND volume_name = ?",
+            (serial, volume_name),
+        )
+        self.commit()
+        return cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0
+
+    def list_trusted_usb_devices(self) -> List[Dict[str, Any]]:
+        """All user-trusted drives, newest first."""
+        return self.query(
+            "SELECT * FROM usb_trusted_devices ORDER BY trusted_at DESC")
+
+    # ------------------------------------------------------------------
     # cleanup_history
     # ------------------------------------------------------------------
 

@@ -179,3 +179,17 @@ CREATE TABLE IF NOT EXISTS cleanup_history (
     restored        INTEGER NOT NULL DEFAULT 0,
     restored_at     TEXT
 );
+
+-- ------------------------------------------------------------
+-- usb_trusted_devices : user-approved removable drives that skip
+-- automatic rescanning. Trust is by volume serial + label, so a
+-- different drive with the same letter is never trusted by accident.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS usb_trusted_devices (
+    device_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    serial          TEXT    NOT NULL,
+    volume_name     TEXT    NOT NULL,
+    label           TEXT,
+    trusted_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (serial, volume_name)
+);
