@@ -1,9 +1,9 @@
 # KhokharGuard runtime artifacts
 logs/
 reports/
-database/khokharguard.db
-database/khokharguard.db-wal
-database/khokharguard.db-shm
+database/*.db
+*.db-wal
+*.db-shm
 database/*.corrupt.bak
 config/settings.json
 
