@@ -184,6 +184,14 @@ Nothing else needs to change in the workflow:
    downloads accumulate. A valid signature plus timestamp removes the
    "Unknown publisher" class of warning immediately.
 
+4. Once this first signed release is verified, enable the CI hard
+   gate: add the repository **variable**
+   `REQUIRE_SIGNED_ARTIFACTS = true` (Settings → Secrets and variables
+   → Actions → **Variables** tab — a variable, not a secret, so the
+   gate state is visible). From the next tag build, the release job
+   **fails** if any shipped `.exe` (installer or portable) is unsigned.
+   Leave it off until signing demonstrably works end to end.
+
 ---
 
 ## Troubleshooting

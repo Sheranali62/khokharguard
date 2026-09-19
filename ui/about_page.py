@@ -13,6 +13,7 @@ import tkinter.ttk as ttk
 
 from ui.theme import colors
 from ui.widgets import Card, StatRow
+from utils import paths
 
 if TYPE_CHECKING:  # pragma: no cover
     from ui.app import KhokharGuardApp
@@ -64,6 +65,24 @@ class AboutPage(ttk.Frame):
         ):
             row = StatRow(card, label, value)
             row.pack(fill="x", pady=2, padx=20)
+
+        # Data location + legacy-migration note: visible, honest, and
+        # consistent with the first-run dialog and docs/UPGRADING.md.
+        ttk.Label(
+            card,
+            text="All data (database, quarantine, signatures, logs, "
+                 "reports) stays local in:\n"
+                 + str(paths.app_data_dir()),
+            style="CardDim.TLabel", wraplength=560, justify="center",
+        ).pack(pady=(10, 2))
+        ttk.Label(
+            card,
+            text="Upgraded from LocalGuard? Settings, scan history and "
+                 "quarantine were imported on first launch - a summary "
+                 "dialog was shown once, and imported quarantined items "
+                 "can be reviewed on the Quarantine page.",
+            style="CardDim.TLabel", wraplength=560, justify="center",
+        ).pack(pady=(2, 4))
 
         disclaimer = ttk.Label(
             card,

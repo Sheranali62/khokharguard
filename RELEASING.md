@@ -73,6 +73,12 @@ git push origin vX.Y.Z
       `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` + a federated
       credential) with a client-secret fallback — see
       `docs/AZURE_SIGNING_SETUP.md`.
+- [ ] If the `REQUIRE_SIGNED_ARTIFACTS` repository **variable** is set
+      to `true`, the **Require signed artefacts** step must have
+      *succeeded* — it hard-fails the build when any shipped `.exe`
+      (installer or portable) is unsigned. Flip the variable on only
+      after the first signed release has been verified end to end
+      (`docs/AZURE_SIGNING_SETUP.md`, step 6).
 - [ ] `Verify release artefacts` step passed (runs
       `scripts/check_release.py --artifacts dist`).
 - [ ] Both artefacts uploaded:

@@ -134,9 +134,20 @@ def _encodeint(value: int) -> bytes:
 
 
 def _decodepoint(data: bytes) -> _Point:
-    """Decode a 32-byte point encoding; raises ValueError when invalid."""
+    """Decode a 32-byte point encoding; raises ValueError when invalid.
+
+    Enforces the RFC 8032 section 5.1.3 decoding rules: the y integer
+    must be canonical (y < p), and the recovered point must lie on the
+    curve. Non-canonical encodings are rejected exactly like the
+    OpenSSL backend so both verifiers agree on attacker-controlled
+    input (differential-tested in tests/test_ed25519_differential.py).
+    """
     y = _decodeint(data) & ((1 << 255) - 1)
+    if y >= _Q:
+        raise ValueError("non-canonical y (y >= p)")
     x = _xrecover(y)
+    if x == 0 and (data[31] >> 7) & 1:
+        raise ValueError("non-canonical encoding (x = 0 with sign bit)")
     if x & 1 != (data[31] >> 7) & 1:
         x = _Q - x
     if not _is_on_curve((x, y)):
@@ -188,6 +199,8 @@ def _verify_pure_python(public_key: bytes, signature: bytes,
                         message: bytes) -> bool:
     """RFC 8032 verification without optional dependencies (fallback)."""
     try:
+        if len(public_key) != 32 or len(signature) != 64:
+            return False  # malformed sizes are never valid signatures
         r_point = _decodepoint(signature[:32])
         a_point = _decodepoint(public_key)
         s_value = _decodeint(signature[32:])

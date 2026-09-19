@@ -14,6 +14,7 @@ import tkinter.ttk as ttk
 
 from ui.theme import colors
 from ui.widgets import Card
+from utils import paths
 
 if TYPE_CHECKING:  # pragma: no cover
     from ui.app import KhokharGuardApp
@@ -51,6 +52,18 @@ class FirstRunDialog(tk.Toplevel):
         ])
         ttk.Label(card, text=components, style="Card.TLabel",
                   justify="left").pack(anchor="w", pady=(0, 12))
+
+        # Legacy-migration + data-location note: same wording the About
+        # page uses, so users see one consistent story (docs/UPGRADING.md).
+        ttk.Label(
+            card,
+            text="Previously installed as LocalGuard? Settings, scan "
+                 "history and quarantine are imported automatically on "
+                 "first start, and a summary dialog shows what moved. All "
+                 "data stays local in:\n"
+                 + str(paths.app_data_dir()),
+            style="CardDim.TLabel", wraplength=480, justify="left",
+        ).pack(anchor="w", pady=(0, 12))
 
         self.usb_var = tk.BooleanVar(value=True)
         self.rt_var = tk.BooleanVar(value=True)

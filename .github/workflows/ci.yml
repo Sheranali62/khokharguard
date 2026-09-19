@@ -184,6 +184,33 @@ jobs:
           timestamp-digest: SHA256
 
       # ----------------------------------------------------------------
+      # Optional hard gate: fail the release build when any shipped
+      # .exe is unsigned. Off by default; flip it on by adding the
+      # repository VARIABLE REQUIRE_SIGNED_ARTIFACTS = true (Settings ->
+      # Secrets and variables -> Actions -> Variables) once the Azure
+      # signing secrets are configured and the first signed tag build
+      # has been verified end to end (docs/AZURE_SIGNING_SETUP.md,
+      # RELEASING.md step 4). Uses a variable - not a secret - so the
+      # gate state is visible to anyone reading the workflow.
+      # ----------------------------------------------------------------
+      - name: Require signed artefacts (optional gate)
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && vars.REQUIRE_SIGNED_ARTIFACTS == 'true' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = 'KhokharGuard_Setup_' + $env:GITHUB_REF_NAME + '.exe'
+          $installer = Join-Path 'dist\installer' $expected
+          if (-not (Test-Path $installer)) { throw "Installer not found: $installer" }
+          $exes = @($installer) + (Get-ChildItem 'dist\KhokharGuard' -Recurse -Filter *.exe |
+            ForEach-Object { $_.FullName })
+          foreach ($exe in $exes) {
+            $sig = Get-AuthenticodeSignature $exe
+            if ($sig.Status -ne 'Valid') {
+              throw "Unsigned or invalid signature on $exe (Status: $($sig.Status)) - REQUIRE_SIGNED_ARTIFACTS is set"
+            }
+            Write-Host "Signed OK: $exe [$($sig.Status)]"
+          }
+
+      # ----------------------------------------------------------------
       # Release artefacts on version tags (checked for consistency
       # before upload).
       # ----------------------------------------------------------------
