@@ -21,6 +21,7 @@ blindly:
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import shutil
@@ -105,6 +106,12 @@ def _verify_manifest_signature(manifest: Dict[str, object]) -> None:
 
     Raises UpdateError when the key is installed and the signature is
     missing/invalid. No-op when no key is installed (hash-only mode).
+
+    Supported key-file encodings for ``update_public_key.pub``:
+
+        - raw 32 bytes (used exactly, never whitespace-trimmed)
+        - 64 hex characters (optionally surrounded by whitespace)
+        - standard base64 of the 32 raw bytes
     """
     if not manifest_signing_key_installed():
         return
@@ -118,7 +125,27 @@ def _verify_manifest_signature(manifest: Dict[str, object]) -> None:
         signature_bytes = bytes.fromhex(signature_hex)
     except ValueError:
         raise UpdateError("Manifest signature is not valid hex")
-    public_key = public_key_path().read_bytes().strip()
+    # Only trim text framing for textual key encodings; a raw 32-byte
+    # key may legitimately start or end with a byte that .strip() would
+    # remove (0x20, 0x09-0x0d), silently corrupting the key and failing
+    # every verification. Happens for ~4.6% of random raw keys.
+    raw = public_key_path().read_bytes()
+    if len(raw) == 32:
+        public_key = raw
+    else:
+        key_text = raw.strip().decode("utf-8", errors="strict")
+        if len(key_text) == 64 and all(
+                c in "0123456789abcdefABCDEF" for c in key_text):
+            public_key = bytes.fromhex(key_text)
+        else:
+            try:
+                public_key = base64.b64decode(key_text, validate=True)
+            except Exception as exc:  # noqa: BLE001 - invalid key file
+                raise UpdateError(
+                    f"Manifest signing key is unreadable: {exc}")
+    if len(public_key) != 32:
+        raise UpdateError(
+            f"Manifest signing key must be 32 bytes, got {len(public_key)}")
     message = canonical_manifest_bytes(manifest)
     if not ed25519_verify(public_key, signature_bytes, message):
         raise UpdateError(

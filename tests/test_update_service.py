@@ -340,3 +340,73 @@ def test_ed25519_backend_and_fallback_agree():
     assert not ed.verify(b"short", signature, b"x")
     assert not ed.verify(ed.public_key_from_secret(os.urandom(32)),
                          signature + b"pad", b"x")
+
+
+# ---------------------------------------------------------------------------
+# Public-key file encodings (regression: raw keys with whitespace-valued
+# edge bytes were silently corrupted by an unconditional .strip()).
+# ---------------------------------------------------------------------------
+
+def test_raw_key_with_whitespace_edge_bytes_is_used_exactly(update_env):
+    """A raw 32-byte key file is read byte-exactly.
+
+    When the derived public key's first/last byte is whitespace-valued
+    (~6% of keys across both edges), the old unconditional .strip()
+    corrupted the key and every verification failed. Find such a seed,
+    store its raw key, and require a successful verified install.
+    """
+    service, sig_dir, _secret, _public, payloads, us = update_env
+    whitespace_bytes = b" \t\n\r\v\f"
+    while True:
+        seed = os.urandom(32)
+        pub = public_key_from_secret(seed)
+        if pub[0] in whitespace_bytes or pub[31] in whitespace_bytes:
+            break
+    (sig_dir / PUBKEY_NAME).write_bytes(pub)  # raw, no framing
+    payloads["hashes.json"] = b'{"k": 1}'
+    manifest = _signed(_make_manifest(payloads), seed)
+    assert service.install_update(manifest) is True
+    assert (sig_dir / "hashes.json").read_bytes() == b'{"k": 1}'
+
+
+def test_hex_encoded_key_file_is_accepted(update_env):
+    """64-hex-char key files are a supported textual encoding."""
+    service, sig_dir, secret, public, payloads, us = update_env
+    (sig_dir / PUBKEY_NAME).write_text(public.hex() + "\n",
+                                       encoding="ascii")
+    payloads["hashes.json"] = b'{"k": 2}'
+    assert service.install_update(_signed(_make_manifest(payloads), secret))
+    assert (sig_dir / "hashes.json").read_bytes() == b'{"k": 2}'
+
+
+def test_base64_encoded_key_file_is_accepted(update_env):
+    """Base64 key files are a supported textual encoding."""
+    import base64 as b64
+
+    service, sig_dir, secret, public, payloads, us = update_env
+    (sig_dir / PUBKEY_NAME).write_text(
+        b64.b64encode(public).decode("ascii"), encoding="ascii")
+    payloads["hashes.json"] = b'{"k": 3}'
+    assert service.install_update(_signed(_make_manifest(payloads), secret))
+
+
+def test_garbage_key_file_refused_with_clear_error(update_env):
+    """Undecodable key files fail with a clear error, never a hang."""
+    service, sig_dir, secret, _public, payloads, us = update_env
+    (sig_dir / PUBKEY_NAME).write_text("!!! not a key !!!",
+                                       encoding="ascii")
+    payloads["hashes.json"] = b'{"k": 4}'
+    with pytest.raises(us.UpdateError, match="signing key"):
+        service.install_update(_signed(_make_manifest(payloads), secret))
+
+
+def test_wrong_length_key_file_refused(update_env):
+    """Textual encodings that decode to the wrong length are refused."""
+    import base64 as b64
+
+    service, sig_dir, secret, _public, payloads, us = update_env
+    (sig_dir / PUBKEY_NAME).write_text(
+        b64.b64encode(b"x" * 31).decode("ascii"), encoding="ascii")
+    payloads["hashes.json"] = b'{"k": 5}'
+    with pytest.raises(us.UpdateError, match="32 bytes"):
+        service.install_update(_signed(_make_manifest(payloads), secret))
