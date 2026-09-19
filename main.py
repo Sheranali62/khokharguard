@@ -29,7 +29,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from utils import paths  # noqa: E402
-from utils.logger import setup_logging  # noqa: E402
+from utils.logger import get_logger, setup_logging  # noqa: E402
+
+logger = get_logger("main")
 
 
 def _build_cli_parser() -> argparse.ArgumentParser:
