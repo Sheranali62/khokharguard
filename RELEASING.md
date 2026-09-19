@@ -80,28 +80,60 @@ git push origin vX.Y.Z
 
 ## 5. Verify artefacts by use (not just by size)
 
-Download both artefacts from the run page (or
-`gh api repos/Sheranali62/khokharguard/actions/artifacts`) and:
+The commands below are the ones actually used for v1.1.0 — copy them
+and substitute the version.
+
+Download both artefacts (run page, or:
+
+```bash
+gh run download <run-id> --repo Sheranali62/khokharguard \
+  -n KhokharGuard-Setup-vX.Y.Z -D setup
+gh run download <run-id> --repo Sheranali62/khokharguard \
+  -n KhokharGuard-portable-vX.Y.Z -D portable
+```
+
+) and:
 
 **Installer**
 - [ ] Zip extracts intact (no truncation).
-- [ ] `Get-AuthenticodeSignature .\KhokharGuard_Setup_vX.Y.Z.exe` →
-      `Valid` (or explicitly recorded as unsigned this release).
+- [ ] Version metadata + signature state in one shot:
+
+      ```powershell
+      powershell -NoProfile -Command "(Get-Item 'setup/KhokharGuard_Setup_X.Y.Z.exe').VersionInfo |
+        Select-Object ProductName, ProductVersion | Format-List;
+      'Authenticode: ' + (Get-AuthenticodeSignature
+        'setup/KhokharGuard_Setup_X.Y.Z.exe').Status"
+      ```
+
+      Expect `ProductName: Khokhar & Son's Antivirus`, the released
+      version, and `Valid` — or `NotSigned`, explicitly recorded as
+      such in the release notes.
 - [ ] Installer runs on a clean VM/user profile: installs, Start Menu
       shortcut launches, uninstall removes everything.
 
 **Portable bundle**
 - [ ] Extracts and runs from a user-writable directory.
-- [ ] `KhokharGuard.exe version` prints the released version.
-- [ ] `KhokharGuard.exe quick-scan` (or a scan of a temp tree) completes.
+- [ ] `./KhokharGuard.exe version` prints the branded version banner
+      (`Khokhar & Son's Antivirus X.Y.Z`).
+- [ ] `./KhokharGuard.exe status` completes and reports the real
+      data dir (`%LOCALAPPDATA%\KhokharGuard\khokharguard.db`).
+- [ ] Bundle contents present: `_internal/assets/icons/`
+      (khokharantivirus.ico + tray/shield PNGs),
+      `_internal/signatures/hashes.json`,
+      `_internal/signatures/yara/*.yar`, `_internal/database/schema.sql`,
+      `_internal/config/default_config.json`.
 - [ ] GUI launch opens the dashboard; close is clean (no zombie
       processes, `logs/khokharguard.log` has no CRITICAL lines).
 
 **Checksums**
 
 ```bash
-sha256sum KhokharGuard_Setup_vX.Y.Z.exe KhokharGuard-portable-vX.Y.Z.zip
+sha256sum setup/KhokharGuard_Setup_X.Y.Z.exe \
+  KhokharGuard-portable-X.Y.Z.zip
 ```
+
+(On Windows PowerShell:
+`Get-FileHash <file> -Algorithm SHA256`.)
 
 - [ ] Record the digests in the release notes (replaces the
       placeholder).

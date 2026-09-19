@@ -382,9 +382,28 @@ def run_gui() -> int:
         traceback.print_exc()
         return 1
 
+    _show_migration_summary(app)
     root.mainloop()
     logger.info("Application exited")
     return 0
+
+
+def _show_migration_summary(app) -> None:
+    """Show the legacy-import summary once after a fresh migration."""
+    try:
+        from utils.migration import pending_notification
+
+        summary = pending_notification()
+    except Exception:  # noqa: BLE001 - never block startup on this
+        return
+    if not summary:
+        return
+    try:
+        from ui.migration_dialog import MigrationSummaryDialog
+
+        app.root.after(600, lambda: MigrationSummaryDialog(app, summary))
+    except Exception:  # noqa: BLE001 - dialog is optional sugar
+        logger.exception("Migration summary dialog failed")
 
 
 def _service_host() -> int:

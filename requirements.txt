@@ -16,6 +16,11 @@ pillow>=10.0.0; sys_platform == "win32"
 # Install manually if you want YARA support:  pip install yara-python
 yara-python>=4.3.0; sys_platform == "win32" and python_version >= "3.12"
 
+# Recommended: hardened signature verification for update manifests
+# (OpenSSL-backed Ed25519). Optional: the app falls back to its
+# built-in pure-Python verifier when this is not installed.
+cryptography>=42.0.0
+
 # Development / testing:
 pytest>=8.0.0
 

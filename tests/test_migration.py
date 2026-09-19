@@ -249,3 +249,47 @@ def test_existing_vault_file_is_skipped_not_overwritten(
     assert (vault / "evil.exe.qtn").read_bytes() == b"NEWER-LOCAL-PAYLOAD"
     assert "quarantine/evil.exe.qtn" in summary["skipped"]
     assert "quarantine/evil.exe.qtn" not in summary["copied"]
+
+
+# ---------------------------------------------------------------------------
+# UI notification handshake (pending_notification)
+# ---------------------------------------------------------------------------
+
+
+def test_pending_notification_first_call_returns_summary(
+        legacy_home, fresh_target):
+    run_migration()
+    from utils.migration import pending_notification
+
+    summary = pending_notification()
+    assert summary is not None
+    assert summary["status"] == "migrated"
+    assert summary["history_rows"] == 1
+    assert summary["quarantine_records"] == 1
+
+
+def test_pending_notification_shows_exactly_once(
+        legacy_home, fresh_target):
+    run_migration()
+    from utils.migration import pending_notification
+
+    assert pending_notification() is not None
+    assert pending_notification() is None
+    assert pending_notification() is None
+
+
+def test_pending_notification_without_marker_is_none(fresh_target):
+    from utils.migration import pending_notification
+
+    assert pending_notification() is None
+
+
+def test_pending_notification_corrupt_marker_is_none(
+        legacy_home, fresh_target):
+    run_migration()
+    marker = paths.app_data_dir() / "legacy_migration.json"
+    marker.write_text("{not json", encoding="utf-8")
+
+    from utils.migration import pending_notification
+
+    assert pending_notification() is None

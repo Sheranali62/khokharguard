@@ -301,3 +301,42 @@ def test_compare_versions():
     assert compare_versions("2026.09.19", "2026.09.18") == 1
     assert compare_versions("1.0", "1.0.1") == -1
     assert compare_versions("2.0", "2.0") == 0
+
+
+# ---------------------------------------------------------------------------
+# Verifier hardening: backend/fallback cross-check (permanent regression net)
+# ---------------------------------------------------------------------------
+
+
+def test_ed25519_backend_and_fallback_agree():
+    """Randomized round-trips through both verification paths.
+
+    The v1.1.0 release line caught an intermittent pure-Python failure
+    (~1/2000 keys). This test keeps both verifiers honest: when the
+    ``cryptography`` backend is installed the two must agree on every
+    case, and signatures must always verify.
+    """
+    import utils.ed25519 as ed
+
+    cases = 120
+    for _ in range(cases):
+        secret = os.urandom(32)
+        message = os.urandom(64)
+        public = ed.public_key_from_secret(secret)
+        _pk, signature = ed.sign(secret, message)
+        assert ed.verify(public, signature, message), \
+            "valid signature refused"
+        if ed._HAVE_BACKEND:
+            assert ed._verify_pure_python(public, signature, message), \
+                "fallback disagrees with backend on a valid signature"
+
+    # Tampered and malformed input refused by whichever path is active.
+    _pk, signature = ed.sign(os.urandom(32), b"authentic message")
+    assert not ed.verify(ed.public_key_from_secret(os.urandom(32)),
+                         signature, b"authentic message")
+    assert not ed.verify(ed.public_key_from_secret(os.urandom(32)),
+                         signature[:-1] + bytes([signature[-1] ^ 1]),
+                         b"authentic message")
+    assert not ed.verify(b"short", signature, b"x")
+    assert not ed.verify(ed.public_key_from_secret(os.urandom(32)),
+                         signature + b"pad", b"x")

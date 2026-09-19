@@ -30,7 +30,7 @@ It works fully offline.
 11. [Configuration](#configuration)
 12. [Architecture](#architecture)
 13. [Changelog](CHANGELOG.md)
-14. [Release Notes (1.0.0)](docs/RELEASE_NOTES_1.0.0.md)
+14. [Release Notes (1.1.0)](docs/RELEASE_NOTES_1.1.0.md) · [1.0.0](docs/RELEASE_NOTES_1.0.0.md)
 13. [Security Limitations](#security-limitations)
 14. [Known Limitations](#known-limitations)
 

@@ -44,7 +44,8 @@ logger = logging.getLogger("khokharguard.migration")
 LEGACY_APP_NAME = "LocalGuard"
 
 # Marker stored in the KhokharGuard app-data dir after a successful
-# migration (JSON: {"completed": true, "legacy_files": [...]}).
+# migration (JSON: {"completed": true, "legacy_files": [...],
+# "summary": {...}, "notified": bool}).
 _MIGRATION_MARKER = "legacy_migration.json"
 
 # Legacy database file names, checked in the legacy app-data dir and
@@ -93,17 +94,44 @@ def _already_done(legacy_files: List[str]) -> bool:
         sorted(data.get("legacy_files", [])) == sorted(legacy_files)
 
 
-def _write_marker(legacy_files: List[str]) -> None:
+def _write_marker(legacy_files: List[str],
+                  summary: Dict[str, Any]) -> None:
     """Record the completed migration for the once-only guarantee."""
     try:
         marker = _marker_path()
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(
             json.dumps({"completed": True, "version": 1,
-                        "legacy_files": sorted(legacy_files)}),
+                        "legacy_files": sorted(legacy_files),
+                        "summary": summary, "notified": False},
+                       default=str),
             encoding="utf-8")
     except OSError:
         logger.warning("Could not write migration marker")
+
+
+def pending_notification() -> Optional[Dict[str, Any]]:
+    """Return the stored migration summary when the UI has not yet
+    acknowledged it.
+
+    The first call returns the summary and flips ``notified`` so the
+    dialog shows exactly once; subsequent calls return ``None``. A
+    corrupt or missing marker is simply 'nothing to show'.
+    """
+    try:
+        data = json.loads(_marker_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not data.get("completed") or data.get("notified"):
+        return None
+    try:
+        data["notified"] = True
+        _marker_path().write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        logger.warning("Could not update migration marker")
+        return None
+    summary = data.get("summary")
+    return summary if isinstance(summary, dict) else None
 
 
 def _legacy_user_db(legacy_dir: Path) -> Optional[Path]:
@@ -383,7 +411,7 @@ def run_migration(db: Optional[Database] = None) -> Dict[str, Any]:
             _import_settings(legacy_dir, summary)
 
         summary["status"] = "migrated"
-        _write_marker(legacy_files or ["dev-db"])
+        _write_marker(legacy_files or ["dev-db"], summary)
         db.add_event(
             "migration_completed",
             "Imported pre-rebrand LocalGuard data "

@@ -28,7 +28,19 @@ the update check.
 from __future__ import annotations
 
 import hashlib
+import logging
 from typing import Tuple
+
+logger = logging.getLogger(__name__)
+
+try:  # Optional hardened backend (OpenSSL via the cryptography package)
+    from cryptography.hazmat.primitives.asymmetric import (
+        ed25519 as _backend_ed25519,
+    )
+
+    _HAVE_BACKEND = True
+except ImportError:  # pragma: no cover - depends on install
+    _HAVE_BACKEND = False
 
 # Curve25519 field and group constants (RFC 8032 section 5.1).
 _Q = 2 ** 255 - 19                     # field prime
@@ -172,6 +184,24 @@ def public_key_from_secret(secret_key: bytes) -> bytes:
     return _encodepoint(_scalarmult(_B, _clamp(secret_key)))
 
 
+def _verify_pure_python(public_key: bytes, signature: bytes,
+                        message: bytes) -> bool:
+    """RFC 8032 verification without optional dependencies (fallback)."""
+    try:
+        r_point = _decodepoint(signature[:32])
+        a_point = _decodepoint(public_key)
+        s_value = _decodeint(signature[32:])
+        if s_value >= _L:
+            return False  # non-canonical scalar (malleability guard)
+        challenge = _decodeint(
+            _sha512(signature[:32] + public_key + message))
+        return _points_equal(
+            _scalarmult(_B, s_value),
+            _point_add(r_point, _scalarmult(a_point, challenge)))
+    except Exception:  # noqa: BLE001 - malformed input is just invalid
+        return False
+
+
 def sign(secret_key: bytes, message: bytes) -> Tuple[bytes, bytes]:
     """Sign *message*; returns ``(public_key, signature)``.
 
@@ -194,21 +224,20 @@ def sign(secret_key: bytes, message: bytes) -> Tuple[bytes, bytes]:
 def verify(public_key: bytes, signature: bytes, message: bytes) -> bool:
     """True when *signature* verifies over *message* for *public_key*.
 
-    Never raises: malformed inputs (wrong lengths, off-curve points,
-    non-canonical scalars) simply return False.
+    Never raises: malformed inputs (wrong lengths, points not on the
+    curve, non-canonical scalars) simply return False. When the
+    ``cryptography`` package is available its audited OpenSSL-backed
+    implementation performs the verification; the pure-Python path is
+    the fallback for installs without that dependency.
     """
-    try:
-        if len(public_key) != 32 or len(signature) != 64:
-            return False
-        r_point = _decodepoint(signature[:32])
-        a_point = _decodepoint(public_key)
-        s_value = _decodeint(signature[32:])
-        if s_value >= _L:
-            return False  # non-canonical scalar (malleability guard)
-        challenge = _decodeint(
-            _sha512(signature[:32] + public_key + message))
-        return _points_equal(
-            _scalarmult(_B, s_value),
-            _point_add(r_point, _scalarmult(a_point, challenge)))
-    except Exception:  # noqa: BLE001 - malformed input is just invalid
+    if len(public_key) != 32 or len(signature) != 64:
         return False
+    if _HAVE_BACKEND:
+        try:
+            key = _backend_ed25519.Ed25519PublicKey.from_public_bytes(
+                public_key)
+            key.verify(signature, message)
+            return True
+        except Exception:  # noqa: BLE001 - any backend rejection is invalid
+            return False
+    return _verify_pure_python(public_key, signature, message)
