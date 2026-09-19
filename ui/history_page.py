@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scan history page.
+"""Khokhar & Son's Antivirus - scan history page.
 
 Lists recorded scans with per-scan results, export to TXT/CSV/JSON,
 and delete controls (spec sections 30, 32).
@@ -14,13 +14,13 @@ import tkinter.ttk as ttk
 from ui.widgets import Card, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class HistoryPage(ttk.Frame):
     """Scan history page."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._build()
@@ -88,7 +88,7 @@ class HistoryPage(ttk.Frame):
         """Return the scan_id of the selected row."""
         selection = self.tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard", "Select a scan first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a scan first.",
                                    parent=self)
             return None
         values = self.tree.item(selection[0], "values")
@@ -122,7 +122,7 @@ class HistoryPage(ttk.Frame):
         scan_id = self._selected_scan_id()
         if scan_id is None:
             return
-        if not tk.messagebox.askyesno("LocalGuard",
+        if not tk.messagebox.askyesno("KhokharGuard",
                                       "Delete the selected scan record?",
                                       parent=self):
             return
@@ -132,7 +132,7 @@ class HistoryPage(ttk.Frame):
     def _clear_all(self) -> None:
         """Wipe all scan history after confirmation."""
         if not tk.messagebox.askyesno(
-            "LocalGuard", "Delete ALL scan history records?", parent=self
+            "KhokharGuard", "Delete ALL scan history records?", parent=self
         ):
             return
         self.app.clear_scan_history()

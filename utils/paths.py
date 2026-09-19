@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - path resolution utilities.
+"""Khokhar & Son's Antivirus - path resolution utilities.
 
 Resolves filesystem locations for data, configuration, signatures,
 quarantine, logs, and reports. Supports running from source and from a
@@ -12,8 +12,8 @@ import os
 import sys
 from pathlib import Path
 
-APP_NAME = "LocalGuard"
-APP_DIR_NAME = "LocalGuard"
+APP_NAME = "KhokharGuard"
+APP_DIR_NAME = "KhokharGuard"
 
 
 def is_frozen() -> bool:
@@ -48,7 +48,7 @@ def executable_dir() -> Path:
 def app_data_dir() -> Path:
     """Writable per-user application data directory.
 
-    Windows: ``%LOCALAPPDATA%\\LocalGuard`` with a fallback to the
+    Windows: ``%LOCALAPPDATA%\\KhokharGuard`` with a fallback to the
     user profile when the variable is missing (e.g. odd environments).
     """
     local_app_data = os.environ.get("LOCALAPPDATA")
@@ -68,8 +68,8 @@ def config_dir() -> Path:
 def database_path() -> Path:
     """Path of the main SQLite database file."""
     if is_frozen():
-        return app_data_dir() / "localguard.db"
-    return project_root() / "database" / "localguard.db"
+        return app_data_dir() / "khokharguard.db"
+    return project_root() / "database" / "khokharguard.db"
 
 
 def schema_path() -> Path:
@@ -133,8 +133,8 @@ def logs_dir() -> Path:
 
 
 def log_file_path() -> Path:
-    """Path of the main log file: logs/localguard.log."""
-    return logs_dir() / "localguard.log"
+    """Path of the main log file: logs/khokharguard.log."""
+    return logs_dir() / "khokharguard.log"
 
 
 def reports_dir() -> Path:

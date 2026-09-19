@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Ed25519 signing and verification (RFC 8032).
+"""Khokhar & Son's Antivirus - Ed25519 signing and verification (RFC 8032).
 
 Pure-Python Ed25519 used to authenticate signature-update manifests
 when a signing public key is installed in

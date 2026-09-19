@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - quarantine database access.
+"""Khokhar & Son's Antivirus - quarantine database access.
 
 Thin, quarantine-specific facade over the shared Database so the
 quarantine package has one obvious place for its persistence logic.

@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - UI package."""
+"""Khokhar & Son's Antivirus - UI package."""

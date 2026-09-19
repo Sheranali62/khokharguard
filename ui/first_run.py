@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - first-run welcome dialog.
+"""Khokhar & Son's Antivirus - first-run welcome dialog.
 
 Shown on first launch (spec section 59): introduces components and
 asks for USB auto-scan, real-time protection, and start-with-Windows
@@ -16,16 +16,16 @@ from ui.theme import colors
 from ui.widgets import Card
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class FirstRunDialog(tk.Toplevel):
     """Welcome + protection options dialog."""
 
-    def __init__(self, app: "LocalGuardApp") -> None:
+    def __init__(self, app: "KhokharGuardApp") -> None:
         super().__init__(app.root)
         self.app = app
-        self.title("Welcome to LocalGuard")
+        self.title("Welcome to KhokharGuard")
         self.geometry("560x520")
         self.transient(app.root)
         self.grab_set()
@@ -36,7 +36,7 @@ class FirstRunDialog(tk.Toplevel):
         tk.Label(card, text="\U0001F6E1", font=("Segoe UI Emoji", 40),
                  bg=card_style_bg(), fg=colors()["accent"]).pack(pady=(8, 4))
 
-        ttk.Label(card, text="Welcome to LocalGuard",
+        ttk.Label(card, text="Welcome to KhokharGuard",
                   style="H2.TLabel",
                   font=("Segoe UI", 18, "bold")).pack()
         ttk.Label(card,
@@ -66,13 +66,13 @@ class FirstRunDialog(tk.Toplevel):
         )
         self._option(
             card, "Start with Windows", self.startup_var,
-            "Registers LocalGuard in the visible HKCU Run key. "
+            "Registers KhokharGuard in the visible HKCU Run key. "
             "Changeable anytime in Settings.",
         )
 
         ttk.Label(card,
                   text="No antivirus can guarantee detection of every "
-                       "threat. LocalGuard complements Windows Security.",
+                       "threat. KhokharGuard complements Windows Security.",
                   style="CardDim.TLabel", wraplength=480,
                   justify="center").pack(pady=(12, 10))
 

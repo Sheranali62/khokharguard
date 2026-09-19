@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - filesystem helpers.
+"""Khokhar & Son's Antivirus - filesystem helpers.
 
 Chunked SHA-256 hashing, safe file reads, size/extension helpers, and
 human-readable formatting. Hashing is streamed so huge files never
@@ -15,7 +15,7 @@ from typing import Iterator, Optional, Tuple
 
 CHUNK_SIZE = 1024 * 1024  # 1 MiB
 
-# Executable / script extensions LocalGuard analyses (spec section 12).
+# Executable / script extensions KhokharGuard analyses (spec section 12).
 EXECUTABLE_EXTENSIONS = {
     ".exe", ".dll", ".scr", ".com", ".pif", ".msi", ".sys", ".drv", ".ocx",
     ".cpl", ".efi",

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - about page.
+"""Khokhar & Son's Antivirus - about page.
 
 Version, engine information, and the mandatory transparency
 disclaimer (spec section 54).
@@ -15,13 +15,13 @@ from ui.theme import colors
 from ui.widgets import Card, StatRow
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class AboutPage(ttk.Frame):
-    """About LocalGuard."""
+    """About KhokharGuard."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._build()
@@ -68,7 +68,7 @@ class AboutPage(ttk.Frame):
         disclaimer = ttk.Label(
             card,
             text="\nNo antivirus can guarantee detection or removal of "
-                 "every threat.\nLocalGuard is designed to complement "
+                 "every threat.\nKhokharGuard is designed to complement "
                  "Windows Security and should be used together with a "
                  "properly maintained operating system.\n",
             style="CardDim.TLabel", wraplength=560, justify="center",
@@ -78,7 +78,7 @@ class AboutPage(ttk.Frame):
         license_label = ttk.Label(
             card,
             text="MIT License - see LICENSE for details.\n"
-                 "LocalGuard never uploads your files. Telemetry is off "
+                 "KhokharGuard never uploads your files. Telemetry is off "
                  "by default.",
             style="CardDim.TLabel", wraplength=560, justify="center",
         )
@@ -101,7 +101,7 @@ class AboutPage(ttk.Frame):
                   style="H3.TLabel").pack(anchor="w", pady=(2, 4))
         ttk.Label(
             card,
-            text="Run a safe test of LocalGuard's detection engine. The "
+            text="Run a safe test of KhokharGuard's detection engine. The "
                  "EICAR test string is a harmless, industry-standard text "
                  "(eicar.org) used by all antivirus products to verify "
                  "detection - it is not malware and cannot harm your "

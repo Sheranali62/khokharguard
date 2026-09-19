@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - protection manager.
+"""Khokhar & Son's Antivirus - protection manager.
 
 Central coordinator for USB monitoring, real-time monitoring, and
 protection state reporting (spec sections 10, 11, 40). Wires monitor
@@ -163,7 +163,7 @@ class ProtectionManager:
                     device.drive_letter, device.volume_name)
                 from utils.notify import notify
 
-                notify("usb_detected", "LocalGuard - USB connected",
+                notify("usb_detected", "KhokharGuard - USB connected",
                        f"{device.drive_letter} {device.volume_name} is a "
                        "trusted device - auto-scan skipped")
                 return
@@ -194,7 +194,7 @@ class ProtectionManager:
                 )
             if status == "completed":
                 notify(
-                    "scan_complete", "LocalGuard - USB Scan Complete",
+                    "scan_complete", "KhokharGuard - USB Scan Complete",
                     f"{device.drive_letter}: {threat_count} finding(s)",
                 )
 
@@ -224,7 +224,7 @@ class ProtectionManager:
 
         notify(
             "threat_detected",
-            "LocalGuard - RANSOMWARE WARNING",
+            "KhokharGuard - RANSOMWARE WARNING",
             f"A watched canary file changed: {path}. Something may be "
             "encrypting your files - review and quarantine now.",
             force=True,
@@ -240,7 +240,7 @@ class ProtectionManager:
             )
             from utils.notify import notify
 
-            notify("threat_detected", "LocalGuard - Threat Quarantined",
+            notify("threat_detected", "KhokharGuard - Threat Quarantined",
                    f"{detection.detection_name} was quarantined",
                    force=True)
             return result

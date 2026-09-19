@@ -442,7 +442,7 @@ def _fake_detection(**overrides: Any):
 
     base = Detection(
         path=r"C:\Users\me\Downloads\sample.exe",
-        detection_name="YARA.LocalGuard_Script_Download_Cradle",
+        detection_name="YARA.KhokharGuard_Script_Download_Cradle",
         severity="high",
         confidence="high",
         detection_method="yara",
@@ -559,14 +559,14 @@ def test_get_history_limit_is_capped(service_core):
 
 
 def _bare_app(test_database):
-    """A LocalGuardApp instance without running Tk.__init__.
+    """A KhokharGuardApp instance without running Tk.__init__.
 
     Only the attributes needed by the history-merge methods are set;
     this keeps UI-free coverage of the merge logic.
     """
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
-    app = LocalGuardApp.__new__(LocalGuardApp)
+    app = KhokharGuardApp.__new__(KhokharGuardApp)
     app.database = test_database
     app.background_protection = True
     app._remote_history_cache = None
@@ -657,11 +657,11 @@ def test_history_cache_respects_ttl(test_database, monkeypatch):
 def _bare_app_with_history(test_database, monkeypatch, snapshot):
     """A bare app whose remote-history fetch returns *snapshot*."""
     from services import service_control
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
     monkeypatch.setattr(service_control, "send_command",
                         lambda method, params=None: snapshot)
-    app = LocalGuardApp.__new__(LocalGuardApp)
+    app = KhokharGuardApp.__new__(KhokharGuardApp)
     app.database = test_database
     app.background_protection = True
     app._remote_history_cache = None
@@ -745,10 +745,10 @@ def test_exclusions_merge_marks_service_scope(test_database, monkeypatch):
 
 def test_exclusions_view_degrades_without_service(test_database):
     """No service: merged view is exactly the local set."""
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
     test_database.add_exclusion("extension", ".log")
-    app = LocalGuardApp.__new__(LocalGuardApp)
+    app = KhokharGuardApp.__new__(KhokharGuardApp)
     app.database = test_database
     app.background_protection = False
     assert [r["value"] for r in app.list_exclusions_merged()] == [".log"]

@@ -1,9 +1,9 @@
-# LocalGuard runtime artifacts
+# KhokharGuard runtime artifacts
 logs/
 reports/
-database/localguard.db
-database/localguard.db-wal
-database/localguard.db-shm
+database/khokharguard.db
+database/khokharguard.db-wal
+database/khokharguard.db-shm
 database/*.corrupt.bak
 config/settings.json
 

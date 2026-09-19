@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - main application shell.
+"""Khokhar & Son's Antivirus - main application shell.
 
 Owns the Tk root, sidebar navigation, service wiring (engine,
 database, quarantine, protection), background-task marshalling to the
@@ -38,12 +38,12 @@ PAGES = [
 ]
 
 
-class LocalGuardApp:
+class KhokharGuardApp:
     """Tkinter application controller."""
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("LocalGuard Antivirus")
+        self.root.title("Khokhar & Son's Antivirus")
         self.settings = get_settings()
         self.version = paths.version()
         # Set before any UI build: page refreshes (dashboard) read this
@@ -56,6 +56,15 @@ class LocalGuardApp:
                                        self.settings.get("gui.window_height", 740)))
         self.root.geometry(f"{width}x{height}")
         self.root.minsize(980, 620)
+
+        # Brand icon for the title bar and taskbar (bundled when frozen).
+        brand_icon = (paths.bundled_data_dir() / "assets" / "icons"
+                      / "khokharantivirus.ico")
+        if brand_icon.is_file():
+            try:
+                self.root.iconbitmap(str(brand_icon))
+            except tk.TclError:
+                pass
 
         # --- Services ---
         from engine.hash_engine import HashEngine
@@ -323,7 +332,7 @@ class LocalGuardApp:
         self._sync_tray_state()
         from utils.notify import notify
 
-        notify("threat_detected", "LocalGuard - Threat Detected",
+        notify("threat_detected", "KhokharGuard - Threat Detected",
                f"{detection.detection_name}: {Path(detection.path).name}")
 
     # ------------------------------------------------------------------
@@ -683,7 +692,7 @@ class LocalGuardApp:
             from utils.notify import notify
 
             if status == "completed":
-                notify("scan_complete", "LocalGuard - Scan Complete", summary or "")
+                notify("scan_complete", "KhokharGuard - Scan Complete", summary or "")
 
         self.ui_call(render)
         self._sync_tray_state()
@@ -1082,7 +1091,7 @@ class LocalGuardApp:
         """Open a results window for a historical scan."""
         results = self.database.results_for_scan(scan_id)
         dialog = tk.Toplevel(self.root)
-        dialog.title(f"Scan #{scan_id} Results - LocalGuard")
+        dialog.title(f"Scan #{scan_id} Results - KhokharGuard")
         dialog.geometry("900x500")
         dialog.transient(self.root)
 
@@ -1365,11 +1374,11 @@ class LocalGuardApp:
         import tkinter.messagebox as messagebox
 
         if level == "error":
-            messagebox.showerror("LocalGuard", text, parent=self.root)
+            messagebox.showerror("KhokharGuard", text, parent=self.root)
         elif level == "warning":
-            messagebox.showwarning("LocalGuard", text, parent=self.root)
+            messagebox.showwarning("KhokharGuard", text, parent=self.root)
         else:
-            messagebox.showinfo("LocalGuard", text, parent=self.root)
+            messagebox.showinfo("KhokharGuard", text, parent=self.root)
 
     # ------------------------------------------------------------------
     # Shutdown

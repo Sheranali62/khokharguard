@@ -1,10 +1,25 @@
 # Changelog
 
-All notable changes to LocalGuard Antivirus are documented here.
+All notable changes to Khokhar & Son's Antivirus are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+### Changed
+
+- **Rebrand to Khokhar & Son's Antivirus:** all user-facing surfaces
+  (window title, tray, notifications, reports, canary text, About,
+  installer, service name, CLI) now carry the Khokhar & Son's brand;
+  the short technical name is KhokharGuard. Brand app icon
+  (`assets/icons/khokharantivirus.ico`) and tray/UI state icons are
+  generated from the approved brand kit in `assets/brand/` by
+  `scripts/generate_icons.py`; the theme uses the brand palette
+  (Luxury Gold `#D4AF37` accents on deep black, Warm White `#F7F5F0`
+  light background). Executable, spec, installer and artefact names
+  change accordingly (`KhokharGuard.exe`, `khokharguard.spec`,
+  `KhokharGuard_Setup_<ver>.exe`, fresh installer AppId); user data
+  directories are now `%LOCALAPPDATA%\KhokharGuard`.
 
 ### Added
 
@@ -107,7 +122,7 @@ Initial release.
 - Real-time monitoring (watchdog, with a polling fallback) of
   Downloads/Desktop/Temp for new suspicious files; auto-quarantine only
   ever applies to signature-confirmed threats.
-- Background protection service (`LocalGuard.exe service ...` or the
+- Background protection service (`KhokharGuard.exe service ...` or the
   Settings page): keeps real-time and USB protection running when the
   GUI is closed. The GUI detects a running background core through
   authenticated IPC and defers to it - the two never double-watch the
@@ -157,7 +172,7 @@ Initial release.
   profile, or spawns processes), performance benchmarks, and
   adversarial tests (malformed PEs, archive bombs, corrupt databases,
   hostile paths).
-- PyInstaller build (`localguard.spec`) and Inno Setup installer with
+- PyInstaller build (`khokharguard.spec`) and Inno Setup installer with
   Start Menu shortcuts, optional autostart, and per-user install
   support (`/CURRENTUSER`).
 - Windows CI (GitHub Actions): compileall, pytest, PyInstaller build
@@ -174,13 +189,13 @@ Initial release.
 - The service IPC channel is loopback-only, token-authenticated
   (constant-time comparison), size-capped, and limited to a fixed
   method allow-list.
-- LocalGuard never disables Windows Security, never executes scanned
+- KhokharGuard never disables Windows Security, never executes scanned
   content, and never removes system files without strong evidence and
   explicit user confirmation.
 
 ### Limitations
 
-- No kernel-level protection; LocalGuard complements Windows Security
+- No kernel-level protection; KhokharGuard complements Windows Security
   and does not replace it. No antivirus can guarantee detection or
   removal of every threat.
 - 7z/RAR inspection requires 7-Zip; HKLM/task/service cleanups and the
@@ -191,4 +206,4 @@ Initial release.
 - Signature updates ship as manifest-verified archives; production
   deployments should add cryptographic signing on top.
 
-[1.0.0]: https://example.invalid/localguard/releases/tag/v1.0.0
+[1.0.0]: https://example.invalid/khokharguard/releases/tag/v1.0.0

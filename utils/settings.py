@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - application settings manager.
+"""Khokhar & Son's Antivirus - application settings manager.
 
 JSON-backed settings layered over config/default_config.json so
 missing keys fall back to documented defaults. The instance file is

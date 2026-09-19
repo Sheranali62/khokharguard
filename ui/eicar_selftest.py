@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - safe EICAR self-test service.
+"""Khokhar & Son's Antivirus - safe EICAR self-test service.
 
 Implements the About page self-test using the standard EICAR test
 string - a harmless industry-standard text used by every antivirus
@@ -9,7 +9,7 @@ Safety properties (spec section 28):
 
     - The test file is written into a private, restrictive temporary
       directory and is deleted in a ``finally`` block on every path.
-    - The file is never executed, opened, or imported by LocalGuard.
+    - The file is never executed, opened, or imported by KhokharGuard.
     - Detection goes through the exact same pipeline used for real
       scans (hash -> signature lookup).
     - The test never touches the quarantine vault: it only reads the
@@ -19,8 +19,8 @@ Safety properties (spec section 28):
 
 Note on Defender: on machines with Microsoft Defender active, Defender
 itself may delete or block the EICAR file the moment it is written.
-LocalGuard reports this transparently instead of treating it as a
-LocalGuard failure.
+KhokharGuard reports this transparently instead of treating it as a
+KhokharGuard failure.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ logger = get_logger("eicar_selftest")
 def _environment_snapshot() -> Dict[str, Any]:
     """Best-effort snapshot of the active-AV environment.
 
-    Reads Defender real-time state, whether LocalGuard's own process is
+    Reads Defender real-time state, whether KhokharGuard's own process is
     excluded from Defender, and the current privilege level. Every
     field degrades to None when unavailable (non-Windows, access
     denied, Defender absent). Read-only: Defender settings are never
@@ -46,7 +46,7 @@ def _environment_snapshot() -> Dict[str, Any]:
     """
     snapshot: Dict[str, Any] = {
         "defender_active": None,
-        "localguard_excluded": None,
+        "khokharguard_excluded": None,
         "is_admin": None,
     }
     try:
@@ -60,10 +60,10 @@ def _environment_snapshot() -> Dict[str, Any]:
     except Exception:  # noqa: BLE001
         logger.debug("Defender status unavailable", exc_info=True)
     try:
-        from utils.windows_utils import localguard_in_defender_exclusions
+        from utils.windows_utils import khokharguard_in_defender_exclusions
 
-        snapshot["localguard_excluded"] = \
-            localguard_in_defender_exclusions()
+        snapshot["khokharguard_excluded"] = \
+            khokharguard_in_defender_exclusions()
     except Exception:  # noqa: BLE001
         logger.debug("Defender exclusion check unavailable", exc_info=True)
     return snapshot
@@ -73,25 +73,25 @@ def _interference_hint(env: Dict[str, Any]) -> str:
     """Build the user guidance for another-AV interference.
 
     Tailored to what we could actually observe: which product is
-    active, whether LocalGuard is already excluded, and whether the
+    active, whether KhokharGuard is already excluded, and whether the
     user could elevate.
     """
     lines = [
-        "To demonstrate LocalGuard's own detection, the EICAR test file "
+        "To demonstrate KhokharGuard's own detection, the EICAR test file "
         "must survive on disk long enough to be scanned. You can:",
         "",
-        "  1. Temporarily add an antivirus exclusion for the LocalGuard "
+        "  1. Temporarily add an antivirus exclusion for the KhokharGuard "
         "program folder:",
         "     Windows Security > Virus & threat protection > Manage "
         "settings > Exclusions > Add an exclusion > Folder.",
     ]
-    if env.get("localguard_excluded") is False:
+    if env.get("khokharguard_excluded") is False:
         lines.append(
-            "     (LocalGuard's process is currently NOT in Defender's "
+            "     (KhokharGuard's process is currently NOT in Defender's "
             "exclusion list.)")
-    elif env.get("localguard_excluded"):
+    elif env.get("khokharguard_excluded"):
         lines.append(
-            "     (LocalGuard's process IS already listed in Defender's "
+            "     (KhokharGuard's process IS already listed in Defender's "
             "exclusions - the interference may come from another "
             "security product.)")
     lines.extend([
@@ -104,7 +104,7 @@ def _interference_hint(env: Dict[str, Any]) -> str:
         f"expected ({'you are' if env.get('is_admin') else 'you are not ' 
                       'currently'} running as Administrator).",
         "",
-        "This is normal antivirus behaviour, not a LocalGuard defect: "
+        "This is normal antivirus behaviour, not a KhokharGuard defect: "
         "every antivirus product reacts to EICAR - that is precisely "
         "what it is for.",
     ])
@@ -125,7 +125,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
             "severity": str,
             "sha256": str,
             "defender_active": bool | None,   # Defender real-time on?
-            "localguard_excluded": bool | None,  # LG in AV exclusions?
+            "khokharguard_excluded": bool | None,  # LG in AV exclusions?
         }
 
     The "another_av_active" status carries an actionable hint (how to
@@ -139,7 +139,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
     env = _environment_snapshot()
     temp = None
     try:
-        temp = safe_temp_dir(prefix="localguard_eicar_")
+        temp = safe_temp_dir(prefix="khokharguard_eicar_")
         temp_path = Path(temp.name)
 
         test_file = temp_path / "eicar_test_file.txt"
@@ -154,7 +154,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
             return {
                 "status": "another_av_active",
                 "message": ("Another antivirus removed the test file "
-                            "before LocalGuard could scan it."),
+                            "before KhokharGuard could scan it."),
                 "detail": (
                     "The EICAR test string was written, but your active "
                     "antivirus ("
@@ -164,7 +164,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
                     + ") deleted or blocked it on write. That is the "
                     "product doing its job - EICAR exists to trigger "
                     "exactly this reaction - so this is expected "
-                    "behaviour, not a LocalGuard failure.\n\n"
+                    "behaviour, not a KhokharGuard failure.\n\n"
                     + _interference_hint(env)
                     + "\n\n"
                     f"Technical detail: {exc}"
@@ -183,7 +183,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
                 "detail": (
                     "Your active antivirus modified or replaced the EICAR "
                     "test file between writing and reading it. "
-                    "LocalGuard's pipeline only sees the bytes on disk, "
+                    "KhokharGuard's pipeline only sees the bytes on disk, "
                     "so its own signature check cannot run here.\n\n"
                     + _interference_hint(env)
                     + "\n\n"
@@ -218,7 +218,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
             status = "detected"
             message = (f"Detected as {detection.detection_name} "
                        f"({detection.severity.upper()} severity). "
-                       "LocalGuard's detection engine is working.")
+                       "KhokharGuard's detection engine is working.")
             detail = (
                 "The EICAR test file was analysed through the standard "
                 "detection pipeline:\n\n"
@@ -237,7 +237,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
             message = (f"Unexpected verdict: {detection.detection_name} "
                        f"({detection.severity}).")
             detail = (
-                "The EICAR test file was scanned, but LocalGuard did not "
+                "The EICAR test file was scanned, but KhokharGuard did not "
                 "produce the expected signature detection. This may mean "
                 "the signature database is missing the EICAR entry.\n\n"
                 f"    Verdict: {detection.detection_name}\n"
@@ -262,7 +262,7 @@ def run_eicar_self_test() -> Dict[str, Any]:
             "message": f"Self-test error: {exc}",
             "detail": (
                 "An unexpected error occurred while running the EICAR "
-                "self-test. Check logs/localguard.log for details."
+                "self-test. Check logs/khokharguard.log for details."
             ),
             "detection_name": "",
             "severity": "",

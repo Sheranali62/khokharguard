@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scanning engine.
+"""Khokhar & Son's Antivirus - scanning engine.
 
 Walks files (quick, full, custom, USB targets), analyses them through
 FileAnalyzer, and yields detections. Supports pause/resume/stop,

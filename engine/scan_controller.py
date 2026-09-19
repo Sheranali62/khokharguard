@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scan controller.
+"""Khokhar & Son's Antivirus - scan controller.
 
 High-level orchestration of scan sessions: persists scan history,
 routes detections to the threat store, records security events, and

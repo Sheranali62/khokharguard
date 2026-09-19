@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LocalGuard Antivirus - application entry point.
+"""Khokhar & Son's Antivirus - application entry point.
 
 Launches the GUI by default and provides a safe, read-mostly CLI
 (spec section 58):
@@ -35,8 +35,8 @@ from utils.logger import setup_logging  # noqa: E402
 def _build_cli_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        prog="LocalGuard",
-        description="LocalGuard Antivirus - local-first Windows malware "
+        prog="KhokharGuard",
+        description="Khokhar & Son's Antivirus - local-first Windows malware "
                     "protection (complements Windows Security).",
     )
     parser.add_argument("--version", action="store_true",
@@ -208,7 +208,7 @@ def cli_quarantine_list() -> int:
               f"Date: {record['quarantine_date']}")
         print(f"    SHA-256:  {record['sha256']}")
     print("\nRestore via the GUI (Quarantine page) or: "
-          "LocalGuard restore <ID>")
+          "KhokharGuard restore <ID>")
     return 0
 
 
@@ -238,7 +238,7 @@ def cli_status() -> int:
     signature_count = SignatureEngine(database=database).count
     defender = get_defender_status()
 
-    print("LOCALGUARD STATUS")
+    print("KHOKHARGUARD STATUS")
     print("=" * 40)
     print(f"Version:                  {paths.version()}")
     print(f"Real-time protection:     "
@@ -256,7 +256,7 @@ def cli_status() -> int:
     counts = database.threat_counts()
     print(f"Open threats:             {counts.get('open', 0)}")
     print()
-    print("LocalGuard complements Windows Security; it does not replace it.")
+    print("KhokharGuard complements Windows Security; it does not replace it.")
     return 0
 
 
@@ -278,7 +278,7 @@ def cli_service(action: str) -> int:
         if action == "install":
             install_service()
             print(f"Service installed ({service_installed()}).")
-            print("Start it with: LocalGuard service start")
+            print("Start it with: KhokharGuard service start")
             return 0
         if action == "uninstall":
             uninstall_service()
@@ -320,7 +320,7 @@ def cli_main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.version:
-        print(f"LocalGuard Antivirus {paths.version()}")
+        print(f"Khokhar & Son's Antivirus {paths.version()}")
         return 0
     if args.command is None:
         parser.print_help()
@@ -344,7 +344,7 @@ def cli_main(argv: Optional[List[str]] = None) -> int:
     if args.command == "service":
         return cli_service(args.action)
     if args.command == "version":
-        print(f"LocalGuard Antivirus {paths.version()}")
+        print(f"Khokhar & Son's Antivirus {paths.version()}")
         return 0
     parser.print_help()
     return 0
@@ -356,16 +356,16 @@ def run_gui() -> int:
 
     import tkinter as tk
 
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
     root = tk.Tk()
     try:
-        app = LocalGuardApp(root)
+        app = KhokharGuardApp(root)
     except Exception:  # noqa: BLE001 - show fatal errors cleanly
         import logging
         import traceback
 
-        logging.getLogger("localguard").critical(
+        logging.getLogger("khokharguard").critical(
             "GUI initialisation failed", exc_info=True)
         traceback.print_exc()
         return 1
@@ -379,7 +379,7 @@ def _service_host() -> int:
     """Handle SCM service hosting dispatch (frozen exe only).
 
     When the SCM starts the registered service it launches
-    ``LocalGuard.exe service run`` with a SCM process context. Only
+    ``KhokharGuard.exe service run`` with a SCM process context. Only
     then may we hand control to pywin32's service manager; the same
     command typed by a user in a console must run the headless core
     directly (the dispatcher fails with error 1063 outside the SCM).
@@ -410,7 +410,7 @@ def _service_host() -> int:
         servicemanager.Initialize()
         servicemanager.PrepareToHostSingle(
             __import__("services.service_control",
-                       fromlist=["LocalGuardWinService"]).LocalGuardWinService)
+                       fromlist=["KhokharGuardWinService"]).KhokharGuardWinService)
         servicemanager.StartServiceCtrlDispatcher()
         return 0
     except Exception as exc:  # noqa: BLE001 - SCM reports via event log

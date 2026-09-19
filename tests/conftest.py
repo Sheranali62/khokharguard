@@ -1,4 +1,4 @@
-"""Pytest fixtures shared across the LocalGuard test suite.
+"""Pytest fixtures shared across the KhokharGuard test suite.
 
 Sandboxing guarantees (spec section 49 - "test that corrupted files
 don't crash the scanner" must never mean "corrupt the developer's
@@ -51,7 +51,7 @@ from utils.settings import Settings  # noqa: E402
 _PROTECTED_REPO_PATHS = (
     PROJECT_ROOT / "signatures" / "hashes.json",
     PROJECT_ROOT / "config" / "settings.json",
-    PROJECT_ROOT / "database" / "localguard.db",
+    PROJECT_ROOT / "database" / "khokharguard.db",
     PROJECT_ROOT / "logs",
     PROJECT_ROOT / "reports",
 )
@@ -145,7 +145,7 @@ def isolate_host_state(tmp_path, monkeypatch) -> Dict[str, Path]:
     monkeypatch.setattr("utils.paths.app_data_dir", lambda: appdata)
     monkeypatch.setattr("utils.paths.logs_dir", lambda: logs)
     monkeypatch.setattr("utils.paths.log_file_path",
-                        lambda: logs / "localguard.log")
+                        lambda: logs / "khokharguard.log")
     monkeypatch.setattr("utils.paths.reports_dir", lambda: reports)
     monkeypatch.setattr("utils.paths.quarantine_dir", lambda: quarantine)
     monkeypatch.setattr("utils.paths.signatures_dir", lambda: signatures)
@@ -153,7 +153,7 @@ def isolate_host_state(tmp_path, monkeypatch) -> Dict[str, Path]:
                         lambda: signatures / "hashes.json")
     monkeypatch.setattr("utils.paths.yara_rules_dir", lambda: yara_rules)
     monkeypatch.setattr("utils.paths.database_path",
-                        lambda: database / "localguard.db")
+                        lambda: database / "khokharguard.db")
     monkeypatch.setattr("utils.paths.settings_path",
                         lambda: appdata_config / "settings.json")
 
@@ -195,7 +195,7 @@ def temp_dirs(isolate_host_state) -> Dict[str, Path]:
 @pytest.fixture()
 def test_database(tmp_path, monkeypatch):
     """Isolated Database instance over a temp file."""
-    db_path = tmp_path / "test_localguard.db"
+    db_path = tmp_path / "test_khokharguard.db"
     monkeypatch.setattr("utils.paths.database_path", lambda: db_path)
     from database.database import reset_shared
 

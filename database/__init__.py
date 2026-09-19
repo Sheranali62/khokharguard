@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - database package."""
+"""Khokhar & Son's Antivirus - database package."""

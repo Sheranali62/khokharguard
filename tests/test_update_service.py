@@ -61,7 +61,7 @@ def test_rfc8032_vector_2():
 
 def test_verify_rejects_tampering():
     """Any change to message or signature invalidates verification."""
-    message = b"LocalGuard manifest body"
+    message = b"KhokharGuard manifest body"
     _pk, sig = sign(_RFC_SK1, message)
     assert verify(_RFC_PK1, sig, message)
 

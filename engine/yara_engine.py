@@ -1,7 +1,7 @@
-"""LocalGuard Antivirus - optional YARA engine.
+"""Khokhar & Son's Antivirus - optional YARA engine.
 
 Loads YARA rules from signatures/yara/ when yara-python is installed.
-If the module is unavailable or a rule fails validation, LocalGuard
+If the module is unavailable or a rule fails validation, KhokharGuard
 continues functioning without YARA (spec section 18). YARA is never a
 mandatory dependency.
 """

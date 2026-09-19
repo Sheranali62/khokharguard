@@ -1,4 +1,4 @@
-LocalGuard YARA starter rules
+KhokharGuard YARA starter rules
 =============================
 
 Location: signatures/yara/*.yar (and *.yara)
@@ -25,7 +25,7 @@ Severity policy
   "high"   - pattern is essentially always malicious; YARA matches
              force the risk score to 100 (engine/file_analyzer.py).
   "medium" - strong indicator that legitimate software occasionally
-             uses; forces score to 70 = SUSPICIOUS band. LocalGuard
+             uses; forces score to 70 = SUSPICIOUS band. KhokharGuard
              classifies these for user review - never auto-deleted.
 
 Rule authoring

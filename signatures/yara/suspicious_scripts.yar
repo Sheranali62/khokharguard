@@ -1,11 +1,11 @@
 /*
-    LocalGuard Antivirus - starter YARA rules: suspicious scripts.
+    Khokhar & Son's Antivirus - starter YARA rules: suspicious scripts.
 
     Safe, content-based rules for script-borne attack patterns. They
     detect *techniques* (download cradles, obfuscated execution,
     persistence), never specific legitimate software.
 
-    Severity policy (matches LocalGuard's classification philosophy):
+    Severity policy (matches KhokharGuard's classification philosophy):
 
         "high"   - pattern is essentially always malicious
         "medium" - strong indicator, but occasionally used by
@@ -17,10 +17,10 @@
     YaraEngine.validate_rules().
 */
 
-rule LocalGuard_Script_PowerShell_Download_Cradle
+rule KhokharGuard_Script_PowerShell_Download_Cradle
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Script downloads and executes remote content via PowerShell (common dropper pattern; some installers do this legitimately - review before acting)"
         severity    = "medium"
         category    = "suspicious_script"
@@ -43,10 +43,10 @@ rule LocalGuard_Script_PowerShell_Download_Cradle
         filesize < 2MB and $ps and 1 of ($dl*) and 1 of ($ex*) and $url
 }
 
-rule LocalGuard_Script_Obfuscated_Base64_Execution
+rule KhokharGuard_Script_Obfuscated_Base64_Execution
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Script executes a large base64-encoded blob (typical obfuscated payload delivery; rare in legitimate scripts)"
         severity    = "medium"
         category    = "suspicious_script"
@@ -62,10 +62,10 @@ rule LocalGuard_Script_Obfuscated_Base64_Execution
         filesize < 2MB and $ps and any of ($enc*) and $blob
 }
 
-rule LocalGuard_Script_Persistence_Scheduled_Task
+rule KhokharGuard_Script_Persistence_Scheduled_Task
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Script creates a scheduled task to re-run an interpreter or script (persistence pattern; verify the task before removing anything)"
         severity    = "medium"
         category    = "persistence"
@@ -84,10 +84,10 @@ rule LocalGuard_Script_Persistence_Scheduled_Task
         and 1 of ($interp*) and $script
 }
 
-rule LocalGuard_Script_Mshta_Remote_Execution
+rule KhokharGuard_Script_Mshta_Remote_Execution
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "mshta.exe executing remote or inline script payload (mshta with a URL or encoded payload is essentially always malicious)"
         severity    = "high"
         category    = "malware"

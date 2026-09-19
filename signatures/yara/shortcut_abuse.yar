@@ -1,5 +1,5 @@
 /*
-    LocalGuard Antivirus - starter YARA rules: shortcut abuse.
+    Khokhar & Son's Antivirus - starter YARA rules: shortcut abuse.
 
     Windows shortcut (.lnk) and URL (.url) files that launch
     interpreters or hide the launch window are the classic USB-dropper
@@ -12,10 +12,10 @@
     conditions keep false positives near zero.
 */
 
-rule LocalGuard_LNK_Launches_Script_Interpreter
+rule KhokharGuard_LNK_Launches_Script_Interpreter
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Shortcut file whose target is a script interpreter (wscript/cscript/mshta/cmd) - typical USB dropper launch technique"
         severity    = "high"
         category    = "shortcut_abuse"
@@ -35,10 +35,10 @@ rule LocalGuard_LNK_Launches_Script_Interpreter
         and (1 of ($interp*) or $script_arg)
 }
 
-rule LocalGuard_LNK_Hidden_Window_Launch
+rule KhokharGuard_LNK_Hidden_Window_Launch
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Shortcut launching a command interpreter with a hidden window (user sees nothing when the payload runs)"
         severity    = "high"
         category    = "shortcut_abuse"
@@ -55,10 +55,10 @@ rule LocalGuard_LNK_Hidden_Window_Launch
         and ($min or $pswin or $pswin2 or $hidden or $style)
 }
 
-rule LocalGuard_URL_Open_Executable_Or_Script
+rule KhokharGuard_URL_Open_Executable_Or_Script
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "Internet shortcut (.url) pointing at a local executable or script instead of a web page - unusual and often malicious on removable drives"
         severity    = "medium"
         category    = "shortcut_abuse"

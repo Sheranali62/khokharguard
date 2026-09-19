@@ -199,9 +199,9 @@ def _drain(app: "Any") -> List[Any]:
 
 def test_menu_structure_and_order(fake_pystray, fake_app):
     """Menu matches the spec section 43 order exactly."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     assert tray.start()
 
     icon = FakeIcon.instances[-1]
@@ -226,9 +226,9 @@ def test_pause_item_checked_follows_state(fake_pystray, fake_app):
     pystray re-invokes the menu callable on update_menu, so the check
     is evaluated against fresh state each time the menu is built.
     """
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     icon = FakeIcon.instances[-1]
 
@@ -250,9 +250,9 @@ def test_pause_item_checked_follows_state(fake_pystray, fake_app):
 def test_menu_actions_marshall_to_ui(fake_pystray, fake_app):
     """Every menu action goes through ui_call (never touches Tk
     directly from the tray thread)."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     items = FakeIcon.instances[-1].menu.resolved(lambda: None)
     actions = {i.text: i.action for i in items if hasattr(i, "action")}
@@ -278,9 +278,9 @@ def test_menu_actions_marshall_to_ui(fake_pystray, fake_app):
 def test_pause_toggle_records_event_and_refreshes(fake_pystray, fake_app):
     """Pause toggle flips protection, records the security event, and
     refreshes the tray state."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     items = FakeIcon.instances[-1].menu.resolved(lambda: None)
     pause_action = next(i.action for i in items if getattr(i, "text", "") ==
@@ -304,23 +304,23 @@ def test_pause_toggle_records_event_and_refreshes(fake_pystray, fake_app):
 
 def test_initial_state_protected_icon(fake_pystray, fake_app):
     """A fresh tray starts in the protected state."""
-    from ui.tray import STATE_PROTECTED, LocalGuardTray
+    from ui.tray import STATE_PROTECTED, KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     icon = FakeIcon.instances[-1]
     assert tray._state == STATE_PROTECTED
     assert icon.icon is not None
-    assert icon.title == "LocalGuard Antivirus"
+    assert icon.title == "Khokhar & Son's Antivirus"
 
 
 def test_update_state_reflects_pause_and_warning(fake_pystray, fake_app,
                                                  monkeypatch):
     """update_state picks paused over warning, and warning otherwise."""
     from ui.tray import STATE_PAUSED, STATE_PROTECTED, STATE_WARNING, \
-        LocalGuardTray
+        KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     icon = FakeIcon.instances[-1]
 
@@ -346,14 +346,14 @@ def test_update_state_reflects_pause_and_warning(fake_pystray, fake_app,
 def test_state_icons_use_bundled_assets(fake_pystray, fake_app):
     """State icons come from the generated PNG assets."""
     from ui import tray as tray_module
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
     for state in ("protected", "paused", "warning"):
         image = tray_module.state_icon(state)
         assert image is not None
         assert image.size[0] >= 16
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     assert FakeIcon.instances[-1].icon is not None
 
@@ -373,9 +373,9 @@ def test_drawn_fallback_when_assets_missing(fake_pystray, fake_app,
 
 def test_start_is_idempotent(fake_pystray, fake_app):
     """Calling start twice does not create a second icon thread."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     assert tray.start() is True
     assert tray.start() is True
     assert len(FakeIcon.instances) == 1
@@ -386,7 +386,7 @@ def test_unavailable_pystray_returns_false(fake_app, monkeypatch):
     import builtins
 
     from ui import tray as tray_module
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
     real_import = builtins.__import__
 
@@ -397,16 +397,16 @@ def test_unavailable_pystray_returns_false(fake_app, monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", blocked)
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     assert tray.start() is False
     assert tray.notify("hello") is False
 
 
 def test_stop_is_safe_without_start(fake_app):
     """stop() before start() must not raise."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    LocalGuardTray(fake_app).stop()
+    KhokharGuardTray(fake_app).stop()
 
 
 # ---------------------------------------------------------------------------
@@ -415,9 +415,9 @@ def test_stop_is_safe_without_start(fake_app):
 
 def test_notify_routes_through_icon(fake_pystray, fake_app):
     """notify() posts a balloon on the pystray icon."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     icon = FakeIcon.instances[-1]
 
@@ -427,9 +427,9 @@ def test_notify_routes_through_icon(fake_pystray, fake_app):
 
 def test_notify_defaults_title(fake_pystray, fake_app):
     """notify() without a title uses the app title."""
-    from ui.tray import APP_TITLE, LocalGuardTray
+    from ui.tray import APP_TITLE, KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     tray.notify("Just a body")
     icon = FakeIcon.instances[-1]
@@ -438,16 +438,16 @@ def test_notify_defaults_title(fake_pystray, fake_app):
 
 def test_notify_before_start_returns_false(fake_app):
     """notify() without a running tray reports failure honestly."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    assert LocalGuardTray(fake_app).notify("x") is False
+    assert KhokharGuardTray(fake_app).notify("x") is False
 
 
 def test_notify_after_stop_returns_false(fake_pystray, fake_app):
     """A stopped tray no longer delivers notifications."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     tray.start()
     tray.stop()
     assert tray.notify("x") is False
@@ -461,9 +461,9 @@ def test_notify_after_stop_returns_false(fake_pystray, fake_app):
 def test_set_scanning_switches_flash_and_restores(fake_pystray, fake_app):
     """set_scanning(True) pulses overlays; set_scanning(False) restores
     the correct state icon."""
-    from ui.tray import LocalGuardTray, state_icon
+    from ui.tray import KhokharGuardTray, state_icon
 
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     icon = FakeIcon.instances[-1]
     baseline = icon.icon
@@ -486,14 +486,14 @@ def test_flash_overlays_use_bundled_assets(fake_pystray, fake_app):
     """With assets present the flash frames come from the generated
     overlay PNGs, not the drawn fallback."""
     from ui import tray as tray_module
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
     frame0 = tray_module._load_state_icon("protected_overlay_0")
     frame1 = tray_module._load_state_icon("protected_overlay_1")
     assert frame0 is not None and frame1 is not None, (
         "generated overlay assets must exist for this test")
 
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     icon = FakeIcon.instances[-1]
 
@@ -512,9 +512,9 @@ def test_flash_overlays_use_bundled_assets(fake_pystray, fake_app):
 
 def test_flash_yields_to_warning_state(fake_pystray, fake_app):
     """A warning overrides the progress hint during the flash loop."""
-    from ui.tray import APP_TITLE, LocalGuardTray
+    from ui.tray import APP_TITLE, KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     icon = FakeIcon.instances[-1]
 
@@ -532,9 +532,9 @@ def test_flash_yields_to_warning_state(fake_pystray, fake_app):
 
 def test_set_scanning_idempotent(fake_pystray, fake_app):
     """Repeated set_scanning calls do not stack flash threads."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     tray.set_scanning(True)
     thread_a = tray._flash_thread
@@ -547,9 +547,9 @@ def test_set_scanning_idempotent(fake_pystray, fake_app):
 
 def test_stop_cancels_flash(fake_pystray, fake_app):
     """stop() ends the flash loop cleanly."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     tray.set_scanning(True)
     assert tray._flash_thread is not None
@@ -560,10 +560,10 @@ def test_stop_cancels_flash(fake_pystray, fake_app):
 def test_scan_tooltip_reports_progress(fake_pystray, fake_app):
     """The flash tooltip includes the live file count when the app
     exposes it."""
-    from ui.tray import LocalGuardTray
+    from ui.tray import KhokharGuardTray
 
     fake_app.tray_scan_progress = lambda: 1234
-    tray = LocalGuardTray(fake_app)
+    tray = KhokharGuardTray(fake_app)
     assert "1,234" in tray._scan_tooltip()
 
     fake_app.tray_scan_progress = lambda: None
@@ -573,10 +573,10 @@ def test_scan_tooltip_reports_progress(fake_pystray, fake_app):
 def test_update_state_keeps_flash_during_scan(fake_pystray, fake_app):
     """update_state while scanning refreshes the tooltip but does not
     fight the flash loop over the icon."""
-    from ui.tray import APP_TITLE, LocalGuardTray
+    from ui.tray import APP_TITLE, KhokharGuardTray
 
     fake_app.tray_scan_progress = lambda: 42
-    tray = LocalGuardTray(fake_app, flash_interval=0.01)
+    tray = KhokharGuardTray(fake_app, flash_interval=0.01)
     tray.start()
     icon = FakeIcon.instances[-1]
 

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - ransomware canary files.
+"""Khokhar & Son's Antivirus - ransomware canary files.
 
 Plants harmless decoy documents ("canaries") in common user folders
 and watches them for modification. Canaries are files no legitimate
@@ -16,7 +16,7 @@ Design:
     - A modified canary raises an immediate user notification and a
       ``canary_tampered`` security event, then restores the decoy so
       coverage continues after the event.
-    - Tamper detection is advisory by design: LocalGuard never kills
+    - Tamper detection is advisory by design: KhokharGuard never kills
       processes or deletes files on a canary hit. The user decides.
 
 This is a detection aid, not a guarantee: ransomware that only
@@ -38,20 +38,20 @@ from utils.settings import get_settings
 
 logger = get_logger("canary")
 
-CANARY_FILENAME = "READ_ME_LocalGuard_Canary.txt"
+CANARY_FILENAME = "READ_ME_KhokharGuard_Canary.txt"
 
 CANARY_TEXT = """\
-LocalGuard ransomware canary file
+KhokharGuard ransomware canary file
 =================================
 
-This is a harmless decoy file placed by LocalGuard Antivirus.
+This is a harmless decoy file placed by Khokhar & Son's Antivirus.
 
 It exists so that bulk-encrypting malware (ransomware) touches a
-watched file. If this file changes, LocalGuard warns you immediately -
+watched file. If this file changes, KhokharGuard warns you immediately -
 a strong sign that something is encrypting your documents.
 
 You can delete this file at any time, or disable canaries in
-LocalGuard Settings > Protection. Deleting it is always safe.
+KhokharGuard Settings > Protection. Deleting it is always safe.
 """
 
 
@@ -76,7 +76,7 @@ def canary_fingerprint(path: Path) -> Optional[bytes]:
 
     Returns None when the file cannot be read (deleted/locked) - the
     caller treats that as tampering too, since canaries are never
-    deleted by LocalGuard itself while enabled.
+    deleted by KhokharGuard itself while enabled.
     """
     try:
         stat = path.stat()

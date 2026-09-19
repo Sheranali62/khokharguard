@@ -1,15 +1,15 @@
-# LocalGuard Antivirus
+# Khokhar & Son's Antivirus
 
 **Local-first Windows malware protection.** Version **1.0.0**
 
-LocalGuard scans, classifies, quarantines, and (with your explicit
+KhokharGuard scans, classifies, quarantines, and (with your explicit
 confirmation) removes malware and suspicious files on Windows 10/11 —
 with USB-drive protection, real-time monitoring of common infection
 points, startup/scheduled-task/service analysis, and security reports.
 It works fully offline.
 
 > **Transparency first:** No antivirus can guarantee detection or
-> removal of every threat. LocalGuard is designed to **complement**
+> removal of every threat. KhokharGuard is designed to **complement**
 > Windows Security (Microsoft Defender), not replace it. It never
 > disables or modifies Defender.
 
@@ -112,8 +112,8 @@ only when you enable that setting.
 Requirements: **Windows 10/11**, **Python 3.12+**
 
 ```bat
-git clone <repository-url> LocalGuard
-cd LocalGuard
+git clone <repository-url> KhokharGuard
+cd KhokharGuard
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
@@ -137,29 +137,29 @@ pip install pyinstaller
 scripts\build_exe.bat
 :: or manually:
 python -m compileall .
-pyinstaller localguard.spec --noconfirm
+pyinstaller khokharguard.spec --noconfirm
 ```
 
 The frozen build bundles the tray dependencies (pystray, Pillow) and
 the icon assets (`assets/icons/*.png`); the executable itself embeds
-the multi-resolution `localguard.ico` shield. Optional yara-python is
+the multi-resolution `khokharantivirus.ico` shield. Optional yara-python is
 excluded from the bundle unless installed before building.
 
-Output: `dist\LocalGuard\LocalGuard.exe` (onedir bundle including
+Output: `dist\KhokharGuard\KhokharGuard.exe` (onedir bundle including
 schema, config, signatures, icon assets, and VERSION).
 
 Then build the installer:
 
 ```bat
-iscc installer\LocalGuard_Setup.iss
+iscc installer\KhokharGuard_Setup.iss
 ```
 
-Output: `dist\installer\LocalGuard_Setup_1.0.0.exe` (Inno Setup;
+Output: `dist\installer\KhokharGuard_Setup_1.0.0.exe` (Inno Setup;
 creates Start Menu / optional desktop shortcuts, optional HKCU
 autostart, per-user data directories, and a clean uninstaller that
 preserves quarantine/logs/reports). The installer requires
 Administrator approval by default; passing `/CURRENTUSER` installs
-per-user into `%LOCALAPPDATA%\Programs\LocalGuard` with a per-user
+per-user into `%LOCALAPPDATA%\Programs\KhokharGuard` with a per-user
 Start Menu entry (no elevation needed).
 
 ### Continuous integration
@@ -172,9 +172,9 @@ installer and portable bundle as workflow artefacts.
 
 ## Installation (installer)
 
-1. Run `LocalGuard_Setup_1.0.0.exe`.
+1. Run `KhokharGuard_Setup_1.0.0.exe`.
 2. Follow the wizard (desktop icon and autostart are optional).
-3. Launch **LocalGuard Antivirus** from the Start Menu.
+3. Launch **Khokhar & Son's Antivirus** from the Start Menu.
 4. On first run, choose your protection options — every option is
    explained and changeable later in Settings.
 
@@ -237,7 +237,7 @@ priority over the progress flash. Menu:
 - **Pause Protection** — toggle real-time + USB monitoring on/off
   (a checkmark shows the paused state; the icon turns amber)
 - **Settings** — open the Settings page
-- **Exit** — quit LocalGuard completely
+- **Exit** — quit KhokharGuard completely
 
 Windows notifications (spec section 41: USB detected, threat
 quarantined, scan complete, protection paused, update available) are
@@ -264,7 +264,7 @@ python main.py service status
 python main.py version
 ```
 
-(The packaged EXE accepts the same commands: `LocalGuard.exe scan C:\`.)
+(The packaged EXE accepts the same commands: `KhokharGuard.exe scan C:\`.)
 
 ### Background protection service
 
@@ -275,8 +275,8 @@ Background Service** (visible in services.msc, needs Administrator
 approval) or run the headless core directly:
 
 ```
-LocalGuard.exe service run      # headless core (blocks)
-LocalGuard.exe service status   # installed/running query
+KhokharGuard.exe service run      # headless core (blocks)
+KhokharGuard.exe service status   # installed/running query
 ```
 
 The core publishes a loopback-only, token-authenticated IPC channel
@@ -319,14 +319,14 @@ delete round trips, and USB detection logic.
 
 ## EICAR Self-Test
 
-LocalGuard ships with the **EICAR** industry-standard test signature.
+KhokharGuard ships with the **EICAR** industry-standard test signature.
 EICAR is a harmless text string every antivirus vendor uses to verify
 detection - it is **not** malware and cannot harm your computer.
 
 ### One-click test (About page)
 
 Open **About → Detection Self-Test (EICAR) → Run Detection
-Self-Test**. LocalGuard writes the EICAR string into a private
+Self-Test**. KhokharGuard writes the EICAR string into a private
 temporary folder, scans it through the real detection pipeline, shows
 the verdict, and deletes the file immediately. The test file is never
 executed and never enters the quarantine vault.
@@ -337,11 +337,11 @@ Possible outcomes:
   signature method).
 - **Self-Test Skipped - Another Antivirus Active** — the active
   antivirus (typically Microsoft Defender) removed or altered the test
-  file before LocalGuard could read it. This is the *other* product
+  file before KhokharGuard could read it. This is the *other* product
   doing its job - EICAR exists to trigger exactly that reaction - so
-  it is expected behaviour, not a LocalGuard failure. The dialog
+  it is expected behaviour, not a KhokharGuard failure. The dialog
   explains the situation and offers a shortcut to Windows Security:
-  temporarily add an exclusion for the LocalGuard program folder (or
+  temporarily add an exclusion for the KhokharGuard program folder (or
   run the test where real-time protection is paused), rerun the
   self-test, and you will get the full **detected** verdict.
   Remember to remove the exclusion afterwards.
@@ -368,7 +368,7 @@ No real malware samples are included in this repository.
   "category": "..."}`.
 - `signatures/yara/*.yar` — optional YARA rules (requires
   `yara-python`).
-- Data locations: `%LOCALAPPDATA%\LocalGuard\` (database, logs,
+- Data locations: `%LOCALAPPDATA%\KhokharGuard\` (database, logs,
   quarantine, reports when frozen; source runs keep them in the repo).
 
 ## Architecture
@@ -397,7 +397,7 @@ reason, SHA-256, size, risk score, and recommended action.
 
 ## Security Limitations
 
-- LocalGuard cannot detect what its signatures, heuristics, PE
+- KhokharGuard cannot detect what its signatures, heuristics, PE
   heuristics, and YARA rules do not cover. Detection coverage is
   inherently incomplete.
 - The heuristic engine produces **indicators, not verdicts** — false
@@ -415,7 +415,7 @@ reason, SHA-256, size, risk score, and recommended action.
 
 - 7z/RAR archive inspection requires 7-Zip (`7z.exe`) to be installed.
 - Some cleanups (HKLM Run keys, scheduled tasks, services) require
-  Administrator privileges; LocalGuard tells you when elevation is
+  Administrator privileges; KhokharGuard tells you when elevation is
   needed and never elevates silently.
 - Full scans skip reparse points and symlinked paths by design.
 - YARA is optional; without it, rule-based detection is unavailable

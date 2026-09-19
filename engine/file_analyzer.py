@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - file analyzer.
+"""Khokhar & Son's Antivirus - file analyzer.
 
 Orchestrates every analysis layer for one file (spec section 65):
 
@@ -50,7 +50,7 @@ SEVERITY_ORDER = {"clean": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 # cheap and high-value).
 YARA_EXTENSIONS = SCRIPT_EXTENSIONS | SHORTCUT_EXTENSIONS
 
-# Extensions LocalGuard performs deep analysis on.
+# Extensions KhokharGuard performs deep analysis on.
 DEEP_EXTENSIONS = (
     EXECUTABLE_EXTENSIONS | SCRIPT_EXTENSIONS | SHORTCUT_EXTENSIONS | ARCHIVE_EXTENSIONS
 )

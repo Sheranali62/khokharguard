@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - incremental scan cache.
+"""Khokhar & Son's Antivirus - incremental scan cache.
 
 Stores clean file verdicts keyed by (path, size, mtime, signature
 version, engine version) so repeat scans skip files that have not

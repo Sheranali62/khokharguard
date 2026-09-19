@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - USB protection page.
+"""Khokhar & Son's Antivirus - USB protection page.
 
 Shows connected removable drives with capacity/free space/filesystem
 and scan controls (spec section 10). Includes USB scan results and
@@ -16,13 +16,13 @@ from ui.theme import colors
 from ui.widgets import Card, StatRow, add_tooltip, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class USBPage(ttk.Frame):
     """USB protection page."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._devices: List[Dict[str, object]] = []
@@ -153,7 +153,7 @@ class USBPage(ttk.Frame):
         """Start a USB scan for the selected drive."""
         selection = self.device_tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard",
+            tk.messagebox.showinfo("KhokharGuard",
                                    "Select a removable drive first.", parent=self)
             return
         values = self.device_tree.item(selection[0], "values")
@@ -164,7 +164,7 @@ class USBPage(ttk.Frame):
         """Trust the selected drive (by serial + volume label)."""
         selection = self.device_tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard",
+            tk.messagebox.showinfo("KhokharGuard",
                                    "Select a removable drive first.", parent=self)
             return
         index = self.device_tree.index(selection[0])
@@ -175,7 +175,7 @@ class USBPage(ttk.Frame):
         volume = str(device.get("volume_name", "") or "")
         if not serial or not volume:
             tk.messagebox.showwarning(
-                "LocalGuard",
+                "KhokharGuard",
                 "This drive cannot be identified reliably (no serial or "
                 "volume label), so it cannot be trusted. It will be "
                 "scanned automatically every time.", parent=self)
@@ -192,12 +192,12 @@ class USBPage(ttk.Frame):
         selection = self.trusted_tree.selection()
         if not selection:
             tk.messagebox.showinfo(
-                "LocalGuard", "Select a trusted device first.", parent=self)
+                "KhokharGuard", "Select a trusted device first.", parent=self)
             return
         values = self.trusted_tree.item(selection[0], "values")
         serial, volume = str(values[1]), str(values[0])
         if not tk.messagebox.askyesno(
-                "LocalGuard",
+                "KhokharGuard",
                 f"Stop trusting '{volume}' (serial {serial})?\n\n"
                 "It will be scanned automatically on every insertion.",
                 parent=self):

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - SHA-256 hash engine.
+"""Khokhar & Son's Antivirus - SHA-256 hash engine.
 
 Computes file hashes with chunked reading plus full metadata records
 (path, size, type, timestamps) as required by spec section 13.

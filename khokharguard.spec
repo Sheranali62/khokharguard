@@ -1,9 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller build specification for LocalGuard Antivirus.
+"""PyInstaller build specification for Khokhar & Son's Antivirus.
 
-Build with:  pyinstaller localguard.spec --noconfirm
+Build with:  pyinstaller khokharguard.spec --noconfirm
 
-The resulting onedir bundle (dist/LocalGuard/LocalGuard.exe) includes:
+The resulting onedir bundle (dist/KhokharGuard/KhokharGuard.exe) includes:
   - all Python modules
   - database/schema.sql
   - config/default_config.json
@@ -29,6 +29,9 @@ icon_assets = ROOT / "assets" / "icons"
 if icon_assets.is_dir():
     for asset in icon_assets.glob("*.png"):
         datas.append((str(asset), "assets/icons"))
+    brand_ico = icon_assets / "khokharantivirus.ico"
+    if brand_ico.is_file():
+        datas.append((str(brand_ico), "assets/icons"))
 
 yara_rules = ROOT / "signatures" / "yara"
 if yara_rules.is_dir():
@@ -82,14 +85,14 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="LocalGuard",
+    name="KhokharGuard",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     console=False,          # GUI application: no console window
-    icon=str(ROOT / "assets" / "icons" / "localguard.ico")
-         if (ROOT / "assets" / "icons" / "localguard.ico").exists() else None,
+    icon=str(ROOT / "assets" / "icons" / "khokharantivirus.ico")
+         if (ROOT / "assets" / "icons" / "khokharantivirus.ico").exists() else None,
 )
 
 coll = COLLECT(
@@ -99,5 +102,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name="LocalGuard",
+    name="KhokharGuard",
 )

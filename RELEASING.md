@@ -1,4 +1,4 @@
-# Releasing LocalGuard
+# Releasing KhokharGuard
 
 A step-by-step checklist for cutting a release. Every release is a
 version tag; CI does the build, test, signing, and packaging, and this
@@ -49,7 +49,7 @@ Then:
 
 ```bash
 git commit -m "Release X.Y.Z"   # only if docs changed since last commit
-git tag -a vX.Y.Z -m "LocalGuard Antivirus X.Y.Z"
+git tag -a vX.Y.Z -m "Khokhar & Son's Antivirus X.Y.Z"
 git push origin main
 git push origin vX.Y.Z
 ```
@@ -76,7 +76,7 @@ git push origin vX.Y.Z
 - [ ] `Verify release artefacts` step passed (runs
       `scripts/check_release.py --artifacts dist`).
 - [ ] Both artefacts uploaded:
-      `LocalGuard-Setup-vX.Y.Z` and `LocalGuard-portable-vX.Y.Z`.
+      `KhokharGuard-Setup-vX.Y.Z` and `KhokharGuard-portable-vX.Y.Z`.
 
 ## 5. Verify artefacts by use (not just by size)
 
@@ -85,22 +85,22 @@ Download both artefacts from the run page (or
 
 **Installer**
 - [ ] Zip extracts intact (no truncation).
-- [ ] `Get-AuthenticodeSignature .\LocalGuard_Setup_vX.Y.Z.exe` →
+- [ ] `Get-AuthenticodeSignature .\KhokharGuard_Setup_vX.Y.Z.exe` →
       `Valid` (or explicitly recorded as unsigned this release).
 - [ ] Installer runs on a clean VM/user profile: installs, Start Menu
       shortcut launches, uninstall removes everything.
 
 **Portable bundle**
 - [ ] Extracts and runs from a user-writable directory.
-- [ ] `LocalGuard.exe version` prints the released version.
-- [ ] `LocalGuard.exe quick-scan` (or a scan of a temp tree) completes.
+- [ ] `KhokharGuard.exe version` prints the released version.
+- [ ] `KhokharGuard.exe quick-scan` (or a scan of a temp tree) completes.
 - [ ] GUI launch opens the dashboard; close is clean (no zombie
-      processes, `logs/localguard.log` has no CRITICAL lines).
+      processes, `logs/khokharguard.log` has no CRITICAL lines).
 
 **Checksums**
 
 ```bash
-sha256sum LocalGuard_Setup_vX.Y.Z.exe LocalGuard-portable-vX.Y.Z.zip
+sha256sum KhokharGuard_Setup_vX.Y.Z.exe KhokharGuard-portable-vX.Y.Z.zip
 ```
 
 - [ ] Record the digests in the release notes (replaces the
@@ -111,10 +111,10 @@ sha256sum LocalGuard_Setup_vX.Y.Z.exe LocalGuard-portable-vX.Y.Z.zip
 ```bash
 gh release create vX.Y.Z \
   --repo Sheranali62/localguard \
-  --title "LocalGuard Antivirus vX.Y.Z" \
+  --title "Khokhar & Son's Antivirus vX.Y.Z" \
   --notes-file docs/RELEASE_NOTES_X.Y.Z.md \
-  LocalGuard_Setup_vX.Y.Z.exe \
-  LocalGuard-portable-vX.Y.Z.zip
+  KhokharGuard_Setup_vX.Y.Z.exe \
+  KhokharGuard-portable-vX.Y.Z.zip
 ```
 
 - [ ] Release notes include: highlights, fixes, security notes,
@@ -125,7 +125,7 @@ gh release create vX.Y.Z \
 
 ## 7. Post-release
 
-- [ ] Announce only what is true: LocalGuard is local-first,
+- [ ] Announce only what is true: KhokharGuard is local-first,
       complements Windows Security, and guarantees nothing about
       detecting every threat.
 - [ ] Bump `VERSION` on `main` to the next `-dev` version **only** if
@@ -142,5 +142,5 @@ gh release create vX.Y.Z \
   **asset**, publish a superseding release, and rotate anything the
   incident touches (signing secrets, CI credentials).
 - Quarantine/restoration data is user-local; release problems never
-  require touching user machines remotely (LocalGuard has no such
+  require touching user machines remotely (KhokharGuard has no such
   capability by design).

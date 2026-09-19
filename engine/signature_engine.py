@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - signature engine.
+"""Khokhar & Son's Antivirus - signature engine.
 
 Loads the local hash signature database (signatures/hashes.json),
 syncs it with the SQLite signatures table, supports EICAR testing,

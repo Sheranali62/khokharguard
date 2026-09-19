@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - cleanup package."""
+"""Khokhar & Son's Antivirus - cleanup package."""

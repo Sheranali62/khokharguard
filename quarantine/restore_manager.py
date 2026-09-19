@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - restore manager.
+"""Khokhar & Son's Antivirus - restore manager.
 
 Unified restore entry point for quarantined files and cleanup
 operations (spec section 47). Every restore creates an audit trail so

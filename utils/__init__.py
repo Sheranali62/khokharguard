@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - utility package."""
+"""Khokhar & Son's Antivirus - utility package."""
 
 from __future__ import annotations
 

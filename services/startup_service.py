@@ -1,6 +1,6 @@
-"""LocalGuard Antivirus - startup (autostart) service.
+"""Khokhar & Son's Antivirus - startup (autostart) service.
 
-Manages the optional 'Start LocalGuard with Windows' setting (spec
+Manages the optional 'Start KhokharGuard with Windows' setting (spec
 section 44) via the standard HKCU Run key. Registration is visible in
 Settings, never hidden, and fully reversible.
 """
@@ -15,12 +15,12 @@ from utils import get_logger, windows_utils
 logger = get_logger("startup_service")
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-VALUE_NAME = "LocalGuard"
+VALUE_NAME = "KhokharGuard"
 HKCU = windows_utils.HKEY_CURRENT_USER
 
 
 def is_registered() -> bool:
-    """True when LocalGuard is registered to start with Windows."""
+    """True when KhokharGuard is registered to start with Windows."""
     if not windows_utils.IS_WINDOWS:
         return False
     for name, _data in windows_utils.registry_read(HKCU, RUN_KEY):
@@ -30,7 +30,7 @@ def is_registered() -> bool:
 
 
 def enable_start_with_windows() -> bool:
-    """Register LocalGuard in the HKCU Run key (visible, reversible)."""
+    """Register KhokharGuard in the HKCU Run key (visible, reversible)."""
     if not windows_utils.IS_WINDOWS:
         return False
     try:
@@ -52,7 +52,7 @@ def enable_start_with_windows() -> bool:
 
 
 def disable_start_with_windows() -> bool:
-    """Remove the LocalGuard Run key entry."""
+    """Remove the KhokharGuard Run key entry."""
     if not windows_utils.IS_WINDOWS:
         return False
     try:

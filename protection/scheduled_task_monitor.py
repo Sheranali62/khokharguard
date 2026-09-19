@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scheduled task analysis.
+"""Khokhar & Son's Antivirus - scheduled task analysis.
 
 Inspects Windows scheduled tasks via ``schtasks /query /fo csv /v``
 with a fixed argument list (spec section 23). Tasks are flagged only

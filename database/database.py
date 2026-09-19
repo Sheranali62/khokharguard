@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - SQLite database layer.
+"""Khokhar & Son's Antivirus - SQLite database layer.
 
 Single connection management, schema initialisation from
 database/schema.sql, and thin, parameterized helper accessors for the
@@ -27,7 +27,7 @@ _SCHEMA_TABLES = (
 
 
 class Database:
-    """Thread-safe SQLite wrapper for LocalGuard."""
+    """Thread-safe SQLite wrapper for KhokharGuard."""
 
     def __init__(self, db_path: Optional[Path] = None) -> None:
         self._path = Path(db_path) if db_path else paths.database_path()

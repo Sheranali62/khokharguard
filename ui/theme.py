@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - UI theme.
+"""Khokhar & Son's Antivirus - UI theme.
 
 Dark and light ttk theme configuration using a consistent palette
 (spec section 6). No animations; accessible contrast; keyboard focus
@@ -18,9 +18,9 @@ PALETTES: Dict[str, Dict[str, str]] = {
         "bg_input": "#2c2d35",
         "fg": "#e8e9ed",
         "fg_dim": "#9a9caa",
-        "accent": "#3b82f6",
-        "accent_hover": "#2563eb",
-        "accent_fg": "#ffffff",
+        "accent": "#D4AF37",
+        "accent_hover": "#E3C566",
+        "accent_fg": "#0B0B0B",
         "success": "#22c55e",
         "warning": "#f59e0b",
         "danger": "#ef4444",
@@ -31,21 +31,21 @@ PALETTES: Dict[str, Dict[str, str]] = {
         "row_odd": "#2b2c34",
     },
     "light": {
-        "bg": "#f4f5f7",
-        "bg_alt": "#eceef1",
-        "bg_card": "#ffffff",
-        "bg_input": "#ffffff",
+        "bg": "#F7F5F0",
+        "bg_alt": "#EFEBE1",
+        "bg_card": "#FFFDF8",
+        "bg_input": "#FFFFFF",
         "fg": "#1a1c22",
         "fg_dim": "#5f6470",
-        "accent": "#2563eb",
-        "accent_hover": "#1d4ed8",
+        "accent": "#B8962E",
+        "accent_hover": "#A4841F",
         "accent_fg": "#ffffff",
         "success": "#16a34a",
         "warning": "#d97706",
         "danger": "#dc2626",
         "danger_hover": "#b91c1c",
-        "border": "#d4d7dd",
-        "select": "#dbeafe",
+        "border": "#DAD4C4",
+        "select": "#F1E7C8",
         "row_even": "#ffffff",
         "row_odd": "#f6f7f9",
     },

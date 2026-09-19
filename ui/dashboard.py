@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - dashboard page.
+"""Khokhar & Son's Antivirus - dashboard page.
 
 The main security dashboard (spec sections 5, 40): protection status
 banner, component status rows, scan action buttons, recent security
@@ -16,13 +16,13 @@ from ui.theme import colors
 from ui.widgets import Card, StatRow, StatusBanner, add_tooltip, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class DashboardPage(ttk.Frame):
     """Main dashboard."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         palette = colors()

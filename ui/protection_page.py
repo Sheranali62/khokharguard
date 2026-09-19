@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - protection page.
+"""Khokhar & Son's Antivirus - protection page.
 
 Advanced protection surface (spec sections 22-26): startup persistence
 entries, scheduled tasks, Windows services, Windows Security status,
@@ -16,13 +16,13 @@ import tkinter.ttk as ttk
 from ui.widgets import Card, add_tooltip, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class ProtectionPage(ttk.Frame):
     """Startup / tasks / services / Windows Security page."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._startup_items: List = []
@@ -58,7 +58,7 @@ class ProtectionPage(ttk.Frame):
                   style="H2.TLabel").pack(anchor="w", pady=(0, 4))
         ttk.Label(card,
                   text="Programs configured to run at Windows startup. "
-                       "LocalGuard flags risk indicators but never removes "
+                       "KhokharGuard flags risk indicators but never removes "
                        "entries automatically.",
                   style="CardDim.TLabel", wraplength=760,
                   justify="left").pack(anchor="w", pady=(0, 8))
@@ -112,7 +112,7 @@ class ProtectionPage(ttk.Frame):
         """Remove the selected startup entry with confirmation + snapshot."""
         selection = self.startup_tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard", "Select an entry first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select an entry first.",
                                    parent=self)
             return
         index = int(selection[0])
@@ -187,7 +187,7 @@ class ProtectionPage(ttk.Frame):
         """Delete the selected task with confirmation + XML backup."""
         selection = self.tasks_tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard", "Select a task first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a task first.",
                                    parent=self)
             return
         index = int(selection[0])
@@ -210,7 +210,7 @@ class ProtectionPage(ttk.Frame):
         ttk.Label(card, text="WINDOWS SERVICES", style="H2.TLabel").pack(
             anchor="w", pady=(0, 4))
         ttk.Label(card,
-                  text="Installed services and their binaries. LocalGuard "
+                  text="Installed services and their binaries. KhokharGuard "
                        "flags suspicious images; service removal requires "
                        "Administrator privileges and confirmation.",
                   style="CardDim.TLabel", wraplength=760,
@@ -270,8 +270,8 @@ class ProtectionPage(ttk.Frame):
         ttk.Label(card, text="WINDOWS SECURITY STATUS", style="H2.TLabel").pack(
             anchor="w", pady=(0, 4))
         ttk.Label(card,
-                  text="LocalGuard complements Windows Security. Defender is "
-                       "never modified or disabled by LocalGuard.",
+                  text="KhokharGuard complements Windows Security. Defender is "
+                       "never modified or disabled by KhokharGuard.",
                   style="CardDim.TLabel", wraplength=760,
                   justify="left").pack(anchor="w", pady=(0, 8))
 

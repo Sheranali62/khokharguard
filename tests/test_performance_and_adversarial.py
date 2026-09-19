@@ -1,5 +1,5 @@
 """Performance benchmarks (spec section 34) and adversarial tests
-(spec section 50) for the LocalGuard engine.
+(spec section 50) for the KhokharGuard engine.
 
 Benchmarks assert scaled-throughput floors rather than absolute
 timings so they stay stable on shared CI hardware: each target is

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end GUI click-through of the About page EICAR self-test.
 
-Launches the real LocalGuard Tkinter GUI with every writable location
+Launches the real KhokharGuard Tkinter GUI with every writable location
 redirected into a temp directory, navigates to the About page, clicks
 the Run Detection Self-Test button, and answers the real native
 dialogs (confirm + verdict) from a helper thread that presses Enter on
@@ -48,13 +48,13 @@ for directory in (_appdata / "config", _logs, _reports, _quarantine,
 
 paths.app_data_dir = lambda: _appdata
 paths.logs_dir = lambda: _logs
-paths.log_file_path = lambda: _logs / "localguard.log"
+paths.log_file_path = lambda: _logs / "khokharguard.log"
 paths.reports_dir = lambda: _reports
 paths.quarantine_dir = lambda: _quarantine
 paths.signatures_dir = lambda: _signatures
 paths.hashes_signature_path = lambda: _signatures / "hashes.json"
 paths.yara_rules_dir = lambda: _signatures / "yara"
-paths.database_path = lambda: _database / "localguard.db"
+paths.database_path = lambda: _database / "khokharguard.db"
 paths.settings_path = lambda: _appdata / "config" / "settings.json"
 
 # Complete first run beforehand so the wizard does not interfere with
@@ -132,10 +132,10 @@ def main() -> int:
     """Run the click-through and report the outcome."""
     import tkinter as tk
 
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
     root = tk.Tk()
-    app = LocalGuardApp(root)
+    app = KhokharGuardApp(root)
 
     done = threading.Event()
     stop = threading.Event()

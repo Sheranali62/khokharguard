@@ -1,4 +1,4 @@
-# LocalGuard Antivirus - Python dependencies
+# Khokhar & Son's Antivirus - Python dependencies
 #
 # Core (all platforms, used by engine / quarantine / database):
 psutil>=5.9.0

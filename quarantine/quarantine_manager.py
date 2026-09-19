@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - quarantine manager.
+"""Khokhar & Son's Antivirus - quarantine manager.
 
 Implements the secure quarantine workflow (spec section 20):
 

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - signature update service.
+"""Khokhar & Son's Antivirus - signature update service.
 
 Checks for and installs signature database updates over HTTPS with
 integrity verification (spec section 37). Updates are never trusted
@@ -43,7 +43,7 @@ MAX_UPDATE_FILE_BYTES = 32 * 1024 * 1024  # 32 MiB per signature file
 MAX_TOTAL_UPDATE_BYTES = 64 * 1024 * 1024  # 64 MiB per update set
 HTTP_TIMEOUT_SECS = 20
 
-_USER_AGENT = "LocalGuard/1.0 (signature-updater)"
+_USER_AGENT = "KhokharGuard/1.0 (signature-updater)"
 
 
 class UpdateError(Exception):

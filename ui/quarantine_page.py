@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - quarantine page.
+"""Khokhar & Son's Antivirus - quarantine page.
 
 Lists quarantined items with Restore / Delete Permanently / Details
 actions (spec section 21). Both destructive actions require explicit
@@ -15,13 +15,13 @@ import tkinter.ttk as ttk
 from ui.widgets import Card, add_tooltip, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class QuarantinePage(ttk.Frame):
     """Quarantine management page."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._build()
@@ -89,7 +89,7 @@ class QuarantinePage(ttk.Frame):
         """
         selection = self.tree.selection()
         if not selection:
-            tk.messagebox.showinfo("LocalGuard", "Select a quarantined item first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a quarantined item first.",
                                    parent=self)
             return None
         return self.app.quarantine_record_for_row(self.tree.item(

@@ -84,29 +84,29 @@ def test_meta_is_read_into_matches(rules_dir):
     an EICAR-shaped file from disk before YARA opens it.
     """
     _write(rules_dir, "meta_probe.yar", (
-        'rule LocalGuard_MetaProbe\n'
+        'rule KhokharGuard_MetaProbe\n'
         '{\n'
         '    meta:\n'
         '        description = "metadata probe"\n'
         '        severity    = "medium"\n'
         '        category    = "probe"\n'
         '    strings:\n'
-        '        $a = "LOCALGUARD-METADATA-PROBE-PAYLOAD"\n'
+        '        $a = "KHOKHARGUARD-METADATA-PROBE-PAYLOAD"\n'
         '    condition:\n'
         '        $a\n'
         '}\n'))
     engine = _engine(rules_dir)
     matches = engine.scan_data(
-        b"prefix...LOCALGUARD-METADATA-PROBE-PAYLOAD...suffix")
+        b"prefix...KHOKHARGUARD-METADATA-PROBE-PAYLOAD...suffix")
     assert matches, "probe rule must hit in-memory data"
     first = matches[0]
-    assert first.rule == "LocalGuard_MetaProbe"
+    assert first.rule == "KhokharGuard_MetaProbe"
     assert first.severity == "medium"
     assert first.category == "probe"
     # The EICAR demo rule also matches the standard string in memory.
     eicar = (b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS"
              b"-TEST-FILE!$H+H*")
-    assert any(m.rule == "LocalGuard_EICAR_Test_File"
+    assert any(m.rule == "KhokharGuard_EICAR_Test_File"
                for m in engine.scan_data(eicar))
 
 
@@ -128,7 +128,7 @@ def test_detects_powershell_download_cradle(rules_dir, tmp_path):
     good.write_text('Write-Output "hello"\n', encoding="utf-8")
 
     assert any(
-        m.rule == "LocalGuard_Script_PowerShell_Download_Cradle"
+        m.rule == "KhokharGuard_Script_PowerShell_Download_Cradle"
         for m in engine.scan_file(bad))
     assert not engine.scan_file(good)
 
@@ -142,7 +142,7 @@ def test_detects_base64_obfuscated_execution(rules_dir, tmp_path):
     target.write_text(
         f"powershell -enc {blob}\n", encoding="utf-8")
     assert any(
-        m.rule == "LocalGuard_Script_Obfuscated_Base64_Execution"
+        m.rule == "KhokharGuard_Script_Obfuscated_Base64_Execution"
         for m in engine.scan_file(target))
 
 
@@ -156,7 +156,7 @@ def test_detects_schtasks_persistence(rules_dir, tmp_path):
         "\"powershell.exe -File C:\\\\run.ps1\" /sc daily\n",
         encoding="utf-8")
     assert any(
-        m.rule == "LocalGuard_Script_Persistence_Scheduled_Task"
+        m.rule == "KhokharGuard_Script_Persistence_Scheduled_Task"
         for m in engine.scan_file(target))
 
 
@@ -171,7 +171,7 @@ def test_detects_mshta_remote_execution(rules_dir, tmp_path):
         encoding="utf-8")
     matches = engine.scan_file(target)
     hit = next(m for m in matches
-               if m.rule == "LocalGuard_Script_Mshta_Remote_Execution")
+               if m.rule == "KhokharGuard_Script_Mshta_Remote_Execution")
     assert hit.severity == "high"
 
 
@@ -193,7 +193,7 @@ def test_detects_malicious_url_shortcut(rules_dir, tmp_path):
         "[InternetShortcut]\nURL=file:///C:/Users/x/run.exe\n",
         encoding="utf-8")
     assert any(
-        m.rule == "LocalGuard_URL_Open_Executable_Or_Script"
+        m.rule == "KhokharGuard_URL_Open_Executable_Or_Script"
         for m in engine.scan_file(target))
 
 
@@ -244,7 +244,7 @@ def test_file_analyzer_uses_yara_for_scripts(rules_dir, tmp_path):
     detection = engine.analyze_path(target)
     assert detection.detection_method == "yara"
     assert detection.detection_name == (
-        "YARA.LocalGuard_Script_PowerShell_Download_Cradle")
+        "YARA.KhokharGuard_Script_PowerShell_Download_Cradle")
     assert "PowerShell" in detection.reason  # rule description surfaced
     database.close()
 
@@ -255,27 +255,27 @@ def test_file_analyzer_uses_yara_for_scripts(rules_dir, tmp_path):
 
 
 PROBE_A = (
-    'rule LocalGuard_HotProbe_A\n'
+    'rule KhokharGuard_HotProbe_A\n'
     '{\n'
     '    strings:\n'
-    '        $a = "LOCALGUARD-HOT-RELOAD-PAYLOAD-A"\n'
+    '        $a = "KHOKHARGUARD-HOT-RELOAD-PAYLOAD-A"\n'
     '    condition:\n'
     '        $a\n'
     '}\n'
 )
 
 PROBE_B = (
-    'rule LocalGuard_HotProbe_B\n'
+    'rule KhokharGuard_HotProbe_B\n'
     '{\n'
     '    strings:\n'
-    '        $a = "LOCALGUARD-HOT-RELOAD-PAYLOAD-B"\n'
+    '        $a = "KHOKHARGUARD-HOT-RELOAD-PAYLOAD-B"\n'
     '    condition:\n'
     '        $a\n'
     '}\n'
 )
 
-PAYLOAD_A = b"x LOCALGUARD-HOT-RELOAD-PAYLOAD-A x"
-PAYLOAD_B = b"x LOCALGUARD-HOT-RELOAD-PAYLOAD-B x"
+PAYLOAD_A = b"x KHOKHARGUARD-HOT-RELOAD-PAYLOAD-A x"
+PAYLOAD_B = b"x KHOKHARGUARD-HOT-RELOAD-PAYLOAD-B x"
 
 
 def _hits(engine: YaraEngine, data: bytes, rule: str) -> bool:
@@ -288,10 +288,10 @@ def _hits(engine: YaraEngine, data: bytes, rule: str) -> bool:
 def test_new_rule_file_is_picked_up_without_restart(rules_dir):
     """Dropping a rule file in applies it on the next scan."""
     engine = _engine(rules_dir)
-    assert not _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B")
+    assert not _hits(engine, PAYLOAD_B, "KhokharGuard_HotProbe_B")
 
     _write(rules_dir, "hot_b.yar", PROBE_B)
-    assert _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B"), (
+    assert _hits(engine, PAYLOAD_B, "KhokharGuard_HotProbe_B"), (
         "new rule must apply without an explicit reload()")
 
 
@@ -300,10 +300,10 @@ def test_edited_rule_is_picked_up_without_restart(rules_dir):
     """Editing a rule file's pattern applies on the next scan."""
     _write(rules_dir, "hot_a.yar", PROBE_A.replace("PAYLOAD-A", "OLD"))
     engine = _engine(rules_dir)
-    assert not _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert not _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
 
     _write(rules_dir, "hot_a.yar", PROBE_A)
-    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
@@ -311,10 +311,10 @@ def test_deleted_rule_stops_matching(rules_dir):
     """Removing a rule file retires its detections."""
     _write(rules_dir, "hot_a.yar", PROBE_A)
     engine = _engine(rules_dir)
-    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
 
     (rules_dir / "hot_a.yar").unlink()
-    assert not _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert not _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
@@ -322,16 +322,16 @@ def test_broken_edit_keeps_last_good_rule_set(rules_dir):
     """A bad edit never blanks protection: old rules stay, then recover."""
     _write(rules_dir, "hot_a.yar", PROBE_A)
     engine = _engine(rules_dir)
-    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
 
     # Break every rule file: wholesale compilation must fail...
     _write(rules_dir, "hot_a.yar", "rule Broken { strings: $a = ")
     # ...yet the last good set stays active, and other rules still work.
-    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A"), (
+    assert _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A"), (
         "broken edit must not disable the previous good rule set")
 
     # Fixing the file recovers compilation and enables new rules.
     _write(rules_dir, "hot_a.yar", PROBE_A)
     _write(rules_dir, "hot_b.yar", PROBE_B)
-    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
-    assert _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B")
+    assert _hits(engine, PAYLOAD_A, "KhokharGuard_HotProbe_A")
+    assert _hits(engine, PAYLOAD_B, "KhokharGuard_HotProbe_B")

@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - detection engine package."""
+"""Khokhar & Son's Antivirus - detection engine package."""

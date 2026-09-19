@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - safe PE (Portable Executable) analyzer.
+"""Khokhar & Son's Antivirus - safe PE (Portable Executable) analyzer.
 
 Parses PE headers, sections, imports, and metadata WITHOUT executing
 anything (spec section 17). Uses only safe structured reads of the

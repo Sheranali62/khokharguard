@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - risk engine.
+"""Khokhar & Son's Antivirus - risk engine.
 
 Combines heuristic factors into a 0-100 risk score with severity
 classes (spec section 16):

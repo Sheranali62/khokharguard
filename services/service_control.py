@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Windows service lifecycle wrapper.
+"""Khokhar & Son's Antivirus - Windows service lifecycle wrapper.
 
 Wraps :class:`~services.windows_service.ProtectionServiceCore` in a
 pywin32 ``win32serviceutil.ServiceFramework`` so protection survives
@@ -29,12 +29,12 @@ from utils import get_logger
 
 logger = get_logger("service_control")
 
-SERVICE_NAME = "LocalGuardService"
-SERVICE_DISPLAY_NAME = "LocalGuard Antivirus Protection Service"
+SERVICE_NAME = "KhokharGuardService"
+SERVICE_DISPLAY_NAME = "Khokhar & Son's Antivirus Protection Service"
 SERVICE_DESCRIPTION = (
-    "Keeps LocalGuard real-time and USB-drive protection running even "
-    "when the LocalGuard window is closed. Manage it from the "
-    "LocalGuard Settings page or services.msc."
+    "Keeps KhokharGuard real-time and USB-drive protection running even "
+    "when the KhokharGuard window is closed. Manage it from the "
+    "KhokharGuard Settings page or services.msc."
 )
 
 
@@ -65,7 +65,7 @@ if sys.platform == "win32" and pywin32_available():  # pragma: no cover
     import win32service
     import win32serviceutil
 
-    class LocalGuardWinService(win32serviceutil.ServiceFramework):  # type: ignore[misc]
+    class KhokharGuardWinService(win32serviceutil.ServiceFramework):  # type: ignore[misc]
         """SCM-visible Windows service hosting the protection core."""
 
         _svc_name_ = SERVICE_NAME
@@ -101,8 +101,8 @@ if sys.platform == "win32" and pywin32_available():  # pragma: no cover
             except Exception:  # noqa: BLE001 - the SCM must see failure
                 logger.exception("Service main loop failed")
                 servicemanager.LogErrorMsg(
-                    "LocalGuard protection service failed; see "
-                    "LocalGuard logs.")
+                    "KhokharGuard protection service failed; see "
+                    "KhokharGuard logs.")
                 self.SvcStop()
             finally:
                 if self.core is not None:
@@ -110,7 +110,7 @@ if sys.platform == "win32" and pywin32_available():  # pragma: no cover
 
 else:
 
-    LocalGuardWinService = None  # type: ignore[assignment,misc]
+    KhokharGuardWinService = None  # type: ignore[assignment,misc]
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +125,7 @@ def _require_windows() -> None:
 
 
 def service_installed() -> bool:
-    """True when the LocalGuard service exists (any state)."""
+    """True when the KhokharGuard service exists (any state)."""
     if sys.platform != "win32":
         return False
     try:
@@ -141,7 +141,7 @@ def service_installed() -> bool:
 
 
 def service_running() -> bool:
-    """True when the LocalGuard service exists and is RUNNING."""
+    """True when the KhokharGuard service exists and is RUNNING."""
     if sys.platform != "win32":
         return False
     state = _query_service_state()
@@ -227,7 +227,7 @@ def install_service() -> None:
         )
     else:
         class_string = (
-            "services.service_control.LocalGuardWinService")
+            "services.service_control.KhokharGuardWinService")
         win32serviceutil.InstallService(
             class_string,
             SERVICE_NAME,
@@ -258,7 +258,7 @@ def start_service(timeout: int = 30) -> None:
     _require_windows()
     if not service_installed():
         raise ServiceControlError(
-            "The LocalGuard service is not installed")
+            "The KhokharGuard service is not installed")
     try:
         import win32serviceutil
 
@@ -361,7 +361,7 @@ def send_command(method: str, params: Optional[dict] = None) -> dict:
 
     info = read_token_file()
     if info is None:
-        raise ServiceControlError("No running LocalGuard service found")
+        raise ServiceControlError("No running KhokharGuard service found")
     client = ServiceIPCClient(
         host=str(info.get("host", "127.0.0.1")),
         port=int(info.get("port", 47615)),

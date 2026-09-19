@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - real-time filesystem monitor.
+"""Khokhar & Son's Antivirus - real-time filesystem monitor.
 
 Watches configurable locations (Downloads, Desktop, Temp) with
 watchdog observers for file creation/modification/moves (spec section

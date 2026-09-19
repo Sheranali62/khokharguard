@@ -1,6 +1,6 @@
-# Authenticode Signing LocalGuard Releases (Azure Artifact Signing)
+# Authenticode Signing KhokharGuard Releases (Azure Artifact Signing)
 
-This guide walks through enabling Authenticode signing for LocalGuard
+This guide walks through enabling Authenticode signing for KhokharGuard
 release binaries so Windows SmartScreen no longer warns on freshly
 downloaded installers.
 
@@ -46,8 +46,8 @@ exists where you (or CI) can lose it.
    **Trusted Signing** — it is the same service).
 3. Fill in:
    - **Subscription / Resource group**: any; a dedicated
-     `rg-localguard-signing` group keeps role assignments tidy.
-   - **Account name**: e.g. `localguard-signing`. This becomes the
+     `rg-khokharguard-signing` group keeps role assignments tidy.
+   - **Account name**: e.g. `khokharguard-signing`. This becomes the
      `AZURE_SIGNING_ACCOUNT` secret.
    - **Pricing tier**: Basic is sufficient for Authenticode
      (Public Trust) signing.
@@ -87,7 +87,7 @@ In the Artifact Signing account → **Certificate profiles** → **Create**:
 3. **Common name (CN)**: the publisher name that will appear in the
    UAC/Properties dialogs — e.g. your legal name or organization name.
    Choose carefully: it is baked into every signed release.
-4. Create, then note the **profile name** (e.g. `localguard-release`).
+4. Create, then note the **profile name** (e.g. `khokharguard-release`).
    That string is the `AZURE_SIGNING_CERT_PROFILE` secret.
 
 The certificate itself is short-lived (about 3 days) and rotates
@@ -104,7 +104,7 @@ the sign steps run.
 
 1. **Create the app registration** (skip if you already have one for CI):
    - Microsoft Entra ID → **App registrations** → **New registration**
-     → name `github-localguard-ci`, single tenant.
+     → name `github-khokharguard-ci`, single tenant.
    - Copy the **Application (client) ID** and the tenant's
      **Directory (tenant) ID** from the overview page.
 2. **Grant the signer role**, scoped as narrowly as possible:
@@ -112,7 +112,7 @@ the sign steps run.
      **Add role assignment**.
    - Role: **Artifact Signing Certificate Profile Signer**
      (on older tenants: *Trusted Signing Certificate Profile Signer*).
-   - Members: the `github-localguard-ci` app registration.
+   - Members: the `github-khokharguard-ci` app registration.
    - Do **not** grant Contributor at subscription level — the signer
      role at the account scope is the least privilege that works.
 3. **Choose the credential the CI principal will use**:
@@ -146,8 +146,8 @@ credential secret for the option chosen in step 4:
 | `AZURE_CLIENT_ID` | Application (client) ID | Entra ID app overview |
 | `AZURE_SUBSCRIPTION_ID` | Subscription hosting the signing account | Subscriptions → overview *(OIDC option)* |
 | `AZURE_SIGNING_ENDPOINT` | Regional endpoint URL | Signing account overview, e.g. `https://eus.codesigning.azure.net/` |
-| `AZURE_SIGNING_ACCOUNT` | Account name | e.g. `localguard-signing` |
-| `AZURE_SIGNING_CERT_PROFILE` | Certificate profile name | e.g. `localguard-release` |
+| `AZURE_SIGNING_ACCOUNT` | Account name | e.g. `khokharguard-signing` |
+| `AZURE_SIGNING_CERT_PROFILE` | Certificate profile name | e.g. `khokharguard-release` |
 | `AZURE_CLIENT_SECRET` | Secret value from step 4 option B | Shown once at creation *(client-secret option only)* |
 
 Nothing else needs to change in the workflow:
@@ -167,11 +167,11 @@ Nothing else needs to change in the workflow:
 1. Push a version tag (`git tag -a vX.Y.Z && git push origin vX.Y.Z`)
    and watch the Actions run. Both **Sign frozen binaries** and
    **Sign installer** steps should now execute (previously skipped).
-2. Download the `LocalGuard-Setup-vX.Y.Z` artefact and verify
+2. Download the `KhokharGuard-Setup-vX.Y.Z` artefact and verify
    locally in PowerShell:
 
    ```powershell
-   $sig = Get-AuthenticodeSignature .\LocalGuard_Setup_vX.Y.Z.exe
+   $sig = Get-AuthenticodeSignature .\KhokharGuard_Setup_vX.Y.Z.exe
    $sig.Status        # Valid
    $sig.SignerCertificate.Subject   # CN = your step-3 publisher name
    ```

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - heuristic analysis engine.
+"""Khokhar & Son's Antivirus - heuristic analysis engine.
 
 Produces evidence-based risk factors from filename, location, content,
 and shortcut/autorun structure (spec sections 10 & 16). Heuristic

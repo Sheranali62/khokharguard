@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Windows startup persistence analysis.
+"""Khokhar & Son's Antivirus - Windows startup persistence analysis.
 
 Inspects common persistence mechanisms (spec section 22):
 

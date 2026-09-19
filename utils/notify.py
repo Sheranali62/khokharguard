@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - user notifications.
+"""Khokhar & Son's Antivirus - user notifications.
 
 Shows Windows notifications with rate limiting so users are never
 spammed (spec section 41). Two delivery providers are tried in order:
@@ -223,7 +223,7 @@ def notify(kind: str, title: str, message: str, force: bool = False) -> bool:
         f"$texts.Item(1).AppendChild($t.CreateTextNode({message_js})) | Out-Null; "
         "$toast = [Windows.UI.Notifications.ToastNotification]::new($t); "
         "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("
-        "'LocalGuard Antivirus').Show($toast)"
+        "'KhokharGuard').Show($toast)"
     )
     try:
         subprocess.Popen(  # noqa: S603 - fixed arguments, no shell

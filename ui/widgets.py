@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - reusable UI widgets.
+"""Khokhar & Son's Antivirus - reusable UI widgets.
 
 Card container, tooltip helper, status banner, and labelled stat rows
 shared by all pages (spec sections 5, 6).

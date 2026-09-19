@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - archive inspection with bomb protection.
+"""Khokhar & Son's Antivirus - archive inspection with bomb protection.
 
 Inspects ZIP/TAR/GZ/BZ2/XZ archives natively; 7Z/RAR when 7-Zip is
 installed. Enforces strict extraction limits (spec section 19): member

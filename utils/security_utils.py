@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - security utilities.
+"""Khokhar & Son's Antivirus - security utilities.
 
 Path validation, safe temporary directories, and archive-bomb guards.
 These helpers exist so no module scans, opens, or extracts outside the
@@ -98,7 +98,7 @@ def safe_temp_dir(prefix: str = "localguard_") -> tempfile.TemporaryDirectory:
 
     Used for archive inspection and the EICAR self-test; caller must
     clean up via the context manager. Contents are never executed by
-    LocalGuard.
+    KhokharGuard.
 
     Cleanup errors are ignored: antivirus products (including Windows
     Defender) routinely hold handles to freshly written files on

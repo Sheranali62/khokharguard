@@ -1,14 +1,14 @@
 /*
-    LocalGuard Antivirus - demo YARA rule
+    Khokhar & Son's Antivirus - demo YARA rule
     Safe, non-malicious demonstration rule. Matches EICAR test files by
     content pattern so YARA integration can be verified without any
     real malware sample being present in this repository.
 */
 
-rule LocalGuard_EICAR_Test_File
+rule KhokharGuard_EICAR_Test_File
 {
     meta:
-        author      = "LocalGuard"
+        author      = "KhokharGuard"
         description = "Standard EICAR antivirus test file"
         severity    = "high"
         category    = "test"

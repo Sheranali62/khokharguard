@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scan page.
+"""Khokhar & Son's Antivirus - scan page.
 
 Quick/Full/Custom scan UI with live progress, pause/resume/stop, and
 the results table (spec sections 7, 8, 9). All scanning happens in
@@ -18,13 +18,13 @@ from ui.theme import colors, severity_color
 from ui.widgets import Card, add_tooltip, make_treeview
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class ScanPage(ttk.Frame):
     """Scan controls and progress."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._selected_targets: List[Path] = []
@@ -171,7 +171,7 @@ class ScanPage(ttk.Frame):
     def _stop_scan(self) -> None:
         """Stop the running scan."""
         if tk.messagebox.askyesno(
-            "LocalGuard", "Stop the running scan?", parent=self
+            "KhokharGuard", "Stop the running scan?", parent=self
         ):
             self.app.stop_scan()
 
@@ -258,7 +258,7 @@ class ScanPage(ttk.Frame):
         """Quarantine the selected finding after confirmation."""
         detection = self._selected_detection()
         if detection is None:
-            tk.messagebox.showinfo("LocalGuard", "Select a finding first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a finding first.",
                                    parent=self)
             return
         self.app.quarantine_detection_with_confirmation(detection, parent=self)
@@ -273,7 +273,7 @@ class ScanPage(ttk.Frame):
         """Mark the selected finding as allowed by the user."""
         detection = self._selected_detection()
         if detection is None:
-            tk.messagebox.showinfo("LocalGuard", "Select a finding first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a finding first.",
                                    parent=self)
             return
         self.app.allow_detection(detection, parent=self)
@@ -290,7 +290,7 @@ class ScanPage(ttk.Frame):
         """Open the technical details dialog for the selected finding."""
         detection = self._selected_detection()
         if detection is None:
-            tk.messagebox.showinfo("LocalGuard", "Select a finding first.",
+            tk.messagebox.showinfo("KhokharGuard", "Select a finding first.",
                                    parent=self)
             return
         self.app.show_threat_details(detection, parent=self)

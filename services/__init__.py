@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - services package."""
+"""Khokhar & Son's Antivirus - services package."""

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - threat details dialog.
+"""Khokhar & Son's Antivirus - threat details dialog.
 
 Shows the complete detection record per spec section 65: detection
 name, severity, confidence, method, reason, hash, and factor
@@ -20,7 +20,7 @@ def show_detection_details(parent: tk.Widget, detection, on_quarantine=None) -> 
     """Open a modal dialog with full detection details."""
     palette = colors()
     dialog = tk.Toplevel(parent)
-    dialog.title("Detection Details - LocalGuard")
+    dialog.title("Detection Details - KhokharGuard")
     dialog.geometry("640x560")
     dialog.transient(parent.winfo_toplevel())
     dialog.grab_set()

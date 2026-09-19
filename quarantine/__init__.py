@@ -1,1 +1,1 @@
-"""LocalGuard Antivirus - quarantine package."""
+"""Khokhar & Son's Antivirus - quarantine package."""

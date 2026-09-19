@@ -30,12 +30,12 @@ def read_version() -> str:
 
 
 def check_installer_iss(version: str, errors: list) -> None:
-    """installer/LocalGuard_Setup.iss must declare the same version."""
-    text = (ROOT / "installer" / "LocalGuard_Setup.iss").read_text(
+    """installer/KhokharGuard_Setup.iss must declare the same version."""
+    text = (ROOT / "installer" / "KhokharGuard_Setup.iss").read_text(
         encoding="utf-8")
     match = re.search(r'#define MyAppVersion "(.*?)"', text)
     if not match:
-        _fail(errors, "installer/LocalGuard_Setup.iss: MyAppVersion missing")
+        _fail(errors, "installer/KhokharGuard_Setup.iss: MyAppVersion missing")
         return
     declared = match.group(1)
     if declared != version:
@@ -45,7 +45,7 @@ def check_installer_iss(version: str, errors: list) -> None:
     # The output filename embeds the version (Inno resolves
     # {#MyAppVersion} at compile time).
     if not re.search(
-            r"OutputBaseFilename=LocalGuard_Setup_(\{#MyAppVersion\}|"
+            r"OutputBaseFilename=KhokharGuard_Setup_(\{#MyAppVersion\}|"
             + re.escape(version) + r")", text):
         _fail(errors, "installer OutputBaseFilename does not embed the "
                       "declared version")
@@ -69,7 +69,7 @@ def check_pyproject_like_versions(version: str, errors: list) -> None:
     if readme.is_file():
         text = readme.read_text(encoding="utf-8")
         stale = re.findall(
-            r"LocalGuard_Setup_(\d+\.\d+\.\d+)\.exe", text)
+            r"KhokharGuard_Setup_(\d+\.\d+\.\d+)\.exe", text)
         for found in set(stale):
             if found != version:
                 _fail(errors,
@@ -79,10 +79,10 @@ def check_pyproject_like_versions(version: str, errors: list) -> None:
 
 def check_artifacts(version: str, dist: Path, errors: list) -> None:
     """Release artefacts for *version* must exist."""
-    installer = dist / "installer" / f"LocalGuard_Setup_{version}.exe"
+    installer = dist / "installer" / f"KhokharGuard_Setup_{version}.exe"
     if not installer.is_file():
         _fail(errors, f"missing installer artefact: {installer}")
-    bundle = dist / "LocalGuard" / "LocalGuard.exe"
+    bundle = dist / "KhokharGuard" / "KhokharGuard.exe"
     if not bundle.is_file():
         _fail(errors, f"missing frozen exe: {bundle}")
 

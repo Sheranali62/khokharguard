@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - USB / removable drive monitor.
+"""Khokhar & Son's Antivirus - USB / removable drive monitor.
 
 Detects removable drives appearing or disappearing and reports their
 details (drive letter, volume name, capacity, free space, file system)
@@ -144,7 +144,7 @@ class USBMonitor:
             logger.info("USB inserted: %s (%s)", device.drive_letter,
                         device.volume_name)
             self._record_device(device)
-            notify("usb_detected", "LocalGuard",
+            notify("usb_detected", "KhokharGuard",
                    f"USB device detected: {device.drive_letter} {device.volume_name}")
             if self.on_inserted is not None:
                 try:

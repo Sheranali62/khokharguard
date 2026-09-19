@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Windows service analysis.
+"""Khokhar & Son's Antivirus - Windows service analysis.
 
 Enumerates services via the ``sc`` command with fixed arguments (spec
 section 24) and flags evidence-based suspicion: binaries in temp

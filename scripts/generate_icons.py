@@ -1,182 +1,170 @@
-#!/usr/bin/env python3
-"""Generate the LocalGuard icon assets from vector definitions.
+"""Generate Khokhar & Son's icon assets from the premium brand kit.
 
-Produces (in assets/icons/):
+Reads the approved brand artwork (assets/brand/) and produces every
+icon the application needs, in assets/icons/:
 
-    localguard.ico      multi-resolution application icon (protected)
-    tray_protected.png  64x64 tray icon - green shield, check mark
-    tray_paused.png     64x64 tray icon - amber shield, pause bars
-    tray_warning.png    64x64 tray icon - red shield, exclamation mark
-    tray_protected_overlay_0.png / _1.png  scanning progress overlays
-                        composited over the protected shield (badge is
-                        blue-green filled / hollow ring). The tray swaps
-                        them to "flash" a live progress hint while a
-                        scan runs.
-    shield_16.png / shield_32.png / shield_48.png  UI shield images
+    khokharantivirus.ico  multi-resolution application icon (16-256 px),
+                          embedded in KhokharAntivirus.exe by the
+                          PyInstaller spec and used by the installer and
+                          shortcuts (title bar + taskbar).
+    tray_protected.png    64x64 tray icon - brand artwork (gold/black).
+    tray_paused.png       64x64 tray icon - desaturated + amber, pause
+                          bars.
+    tray_warning.png      64x64 tray icon - red tinted, exclamation bar.
+    tray_scanning.png     64x64 tray icon - gold tinted, ring arc.
+    tray_protected_overlay_0/1.png  scanning flash frames (progress
+                          ring segments over the protected art).
+    shield_16/32/48.png   UI shield images (dashboard/about sizing).
 
-All three states share the same shield silhouette so the tray icon
-never "jumps" when the security state changes; only the tint and mark
-differ (green check = protected, amber pause = paused, red
-exclamation = warning/attention).
-
-Run:  .venv/Scripts/python.exe scripts/generate_icons.py
+Run from the repo root:  python scripts/generate_icons.py
+Requires Pillow. The brand kit files are read-only inputs; outputs are
+reproducible from them at any time.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance
 
 ROOT = Path(__file__).resolve().parent.parent
+BRAND = ROOT / "assets" / "brand"
 OUT = ROOT / "assets" / "icons"
 
-# Theme palette (ui/theme.py) so tray and UI colors always match.
-GREEN = (34, 197, 94)      # success
-AMBER = (245, 158, 11)     # warning
-RED = (239, 68, 68)        # danger
-BLUE = (59, 130, 246)      # scanning / active work
-OUTLINE = (30, 31, 36)
+SOURCE_ICON = BRAND / "05_App_Icon.png"
+TRAY_SIZE = 64
+ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
+
+# State tints (RGB) and overlay marks.
+AMBER = (245, 158, 11)
+RED = (239, 68, 68)
+GOLD = (212, 175, 55)
 MARK = (255, 255, 255)
-TRANSPARENT = (0, 0, 0, 0)
-
-BASE = 64        # final render size for tray PNGs
-SCALE = 8        # supersampling factor for smooth edges
-BIG = BASE * SCALE
-
-# Shield silhouette in BASE coordinate space.
-SHIELD_POINTS = [
-    (32, 4), (55, 11), (55, 30), (32, 59), (9, 30), (9, 11),
-]
 
 
-def _scaled(points: list) -> list:
-    """Scale point list into the supersampled canvas."""
-    return [(x * SCALE, y * SCALE) for x, y in points]
+def _load_source() -> Image.Image:
+    """The approved app-icon artwork, RGBA square."""
+    with Image.open(SOURCE_ICON) as handle:
+        image = handle.convert("RGBA")
+    side = min(image.size)
+    left = (image.width - side) // 2
+    top = (image.height - side) // 2
+    return image.crop((left, top, left + side, top + side))
 
 
-def render_state(ok: bool | None = None, state: str = "protected") -> Image.Image:
-    """Render one shield state at BASE x BASE, RGBA.
-
-    ``state``: "protected" (green check), "paused" (amber pause bars),
-    or "warning" (red exclamation). ``ok`` is honoured for backwards
-    compatibility: True -> protected, False -> paused.
-    """
-    if ok is not None:
-        state = "protected" if ok else "paused"
-
-    image = Image.new("RGBA", (BIG, BIG), TRANSPARENT)
-    draw = ImageDraw.Draw(image)
-    s = SCALE
-
-    fill = {"protected": GREEN, "paused": AMBER, "warning": RED}[state]
-    draw.polygon(_scaled(SHIELD_POINTS), fill=fill + (255,),
-                 outline=OUTLINE + (255,), width=1 * s)
-
-    if state == "protected":
-        # Check mark.
-        draw.line([(20 * s, 31 * s), (29 * s, 40 * s), (45 * s, 21 * s)],
-                  fill=MARK + (255,), width=5 * s, joint="curve")
-    elif state == "paused":
-        # Pause bars.
-        draw.rectangle((22 * s, 21 * s, 28 * s, 43 * s), fill=MARK + (255,))
-        draw.rectangle((36 * s, 21 * s, 42 * s, 43 * s), fill=MARK + (255,))
-    else:  # warning
-        # Exclamation mark: bar + dot.
-        draw.line([(32 * s, 19 * s), (32 * s, 36 * s)],
-                  fill=MARK + (255,), width=6 * s)
-        draw.ellipse((29 * s, 41 * s, 35 * s, 47 * s), fill=MARK + (255,))
-
-    return image.resize((BASE, BASE), Image.LANCZOS)
+def _tint(image: Image.Image, color, strength: float) -> Image.Image:
+    """Blend the artwork toward *color* by a fraction (0..1)."""
+    layer = Image.new("RGBA", image.size, color + (255,))
+    return Image.blend(image, layer, strength)
 
 
-def render_scanning_state() -> Image.Image:
-    """Render the scanning variant of the shield (blue, hollow ring).
-
-    A distinct tint communicates "working" without losing the brand
-    silhouette; the hollow ring distinguishes it from "paused" at a
-    glance even at 16 px.
-    """
-    image = Image.new("RGBA", (BIG, BIG), TRANSPARENT)
-    draw = ImageDraw.Draw(image)
-    s = SCALE
-    draw.polygon(_scaled(SHIELD_POINTS), fill=BLUE + (255,),
-                 outline=OUTLINE + (255,), width=1 * s)
-    ring = 2 * s
-    draw.ellipse((32 * s - 11 * s, 32 * s - 11 * s,
-                  32 * s + 11 * s, 32 * s + 11 * s),
-                 outline=MARK + (255,), width=ring)
-    return image.resize((BASE, BASE), Image.LANCZOS)
+def _scaled_round(size: int) -> Image.Image:
+    """Brand artwork resized with circular mask (tray-friendly)."""
+    source = _load_source().resize((size, size), Image.LANCZOS)
+    mask = Image.new("L", (size * 4, size * 4), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, size * 4, size * 4), fill=255)
+    mask = mask.resize((size, size), Image.LANCZOS)
+    result = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    result.paste(source, (0, 0), mask)
+    return result
 
 
-def apply_scan_overlay(base: Image.Image, phase: int = 0) -> Image.Image:
-    """Composite the scan-progress badge onto a copy of *base*.
-
-    ``phase`` selects the alternating overlay frame: 0 -> filled
-    blue-green badge, 1 -> hollow badge. Tray flashing alternates the
-    two so the overlay visibly pulses while a scan runs.
-    """
-    image = base.copy().convert("RGBA")
-    draw = ImageDraw.Draw(image)
-    # Badge sits at the lower-right, sized for 16 px legibility.
-    cx, cy, r = 46, 46, 10
-    box = (cx - r, cy - r, cx + r, cy + r)
-    if phase == 0:
-        draw.ellipse(box, fill=BLUE + (255,), outline=MARK + (255,), width=2)
-        draw.line([(cx - 4, cy), (cx + 4, cy)], fill=MARK + (255,), width=2)
-    else:
-        draw.ellipse(box, outline=BLUE + (255,), width=3)
-    return image
+def generate_app_ico() -> None:
+    """Multi-resolution .ico straight from the brand artwork."""
+    source = _load_source()
+    source.save(
+        OUT / "khokharantivirus.ico",
+        format="ICO",
+        sizes=[(size, size) for size in ICO_SIZES],
+    )
 
 
-def build_ico(images: list, target: Path) -> None:
-    """Write a multi-resolution .ico from rendered states."""
-    # Re-render the protected state at the sizes ICO files expect.
-    sources = [img for img in images]
-    sources.append(render_state(state="protected").resize((16, 16), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((24, 24), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((32, 32), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((48, 48), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((64, 64), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((128, 128), Image.LANCZOS))
-    sources.append(render_state(state="protected").resize((256, 256), Image.LANCZOS))
-    sources[0].save(target, format="ICO",
-                    sizes=[(16, 16), (24, 24), (32, 32), (48, 48),
-                           (64, 64), (128, 128), (256, 256)],
-                    append_images=sources[1:])
+def _pause_bars(draw: ImageDraw.ImageDraw, size: int) -> None:
+    """Two white pause bars centred in the lower third."""
+    bar_w, bar_h = max(4, size // 10), size // 4
+    gap = max(3, size // 14)
+    x0 = (size - (bar_w * 2 + gap)) // 2
+    y0 = int(size * 0.58)
+    for offset in (0, bar_w + gap):
+        draw.rounded_rectangle(
+            (x0 + offset, y0, x0 + offset + bar_w, y0 + bar_h),
+            radius=bar_w // 3, fill=MARK + (255,))
 
 
-def main() -> None:
-    """Render every asset and report sizes."""
-    OUT.mkdir(parents=True, exist_ok=True)
+def _exclamation(draw: ImageDraw.ImageDraw, size: int) -> None:
+    """White exclamation mark centred in the lower third."""
+    bar_w = max(4, size // 10)
+    cx = size // 2
+    top, bottom = int(size * 0.52), int(size * 0.78)
+    draw.rounded_rectangle((cx - bar_w // 2, top, cx + bar_w // 2, bottom),
+                           radius=bar_w // 3, fill=MARK + (255,))
+    dot = max(3, bar_w)
+    draw.ellipse((cx - dot // 2, bottom + size // 24,
+                  cx + dot // 2, bottom + size // 24 + dot),
+                 fill=MARK + (255,))
 
-    protected = render_state(state="protected")
-    paused = render_state(state="paused")
-    warning = render_state(state="warning")
 
+def _ring(draw: ImageDraw.ImageDraw, size: int, start: int, end: int,
+          color=MARK, width: int = 5) -> None:
+    """Arc segment around the icon edge (scan progress hint)."""
+    pad = width
+    box = (pad, pad, size - pad, size - pad)
+    draw.arc(box, start=start, end=end, fill=color + (255,), width=width)
+
+
+def generate_tray_states() -> dict:
+    """All four tray states plus the two flash overlay frames."""
+    tray = _scaled_round(TRAY_SIZE)
+
+    protected = tray.copy()
     protected.save(OUT / "tray_protected.png")
+
+    paused = _tint(tray, AMBER, 0.45)
+    paused = ImageEnhance.Color(paused).enhance(0.35)
+    draw = ImageDraw.Draw(paused)
+    _pause_bars(draw, TRAY_SIZE)
     paused.save(OUT / "tray_paused.png")
+
+    warning = _tint(tray, RED, 0.5)
+    draw = ImageDraw.Draw(warning)
+    _exclamation(draw, TRAY_SIZE)
     warning.save(OUT / "tray_warning.png")
-    render_scanning_state().save(OUT / "tray_scanning.png")
 
-    # Scanning progress overlays (alternating frames for the tray
-    # flash). The badge is composited over the protected shield so the
-    # overlay alone describes the progress hint.
-    apply_scan_overlay(protected, phase=0).save(
-        OUT / "tray_protected_overlay_0.png")
-    apply_scan_overlay(protected, phase=1).save(
-        OUT / "tray_protected_overlay_1.png")
+    scanning = _tint(tray, GOLD, 0.35)
+    draw = ImageDraw.Draw(scanning)
+    _ring(draw, TRAY_SIZE, start=210, end=150)
+    scanning.save(OUT / "tray_scanning.png")
 
+    # Flash frames: alternating ring halves over the protected art.
+    for index, (start, end) in enumerate(((180, 360), (0, 180))):
+        frame = tray.copy()
+        draw = ImageDraw.Draw(frame)
+        _ring(draw, TRAY_SIZE, start=start, end=end, color=GOLD, width=6)
+        frame.save(OUT / f"tray_protected_overlay_{index}.png")
+    return {"tray": ["protected", "paused", "warning", "scanning"]}
+
+
+def generate_ui_shields() -> None:
+    """Small round UI images for dashboard/about placement."""
     for size in (16, 32, 48):
-        protected.resize((size, size), Image.LANCZOS).save(
-            OUT / f"shield_{size}.png")
+        _scaled_round(size).save(OUT / f"shield_{size}.png")
 
-    build_ico([protected], OUT / "localguard.ico")
 
-    for asset in sorted(OUT.iterdir()):
-        print(f"  {asset.name}: {asset.stat().st_size:,} bytes")
-    print("Icon assets generated in assets/icons/")
+def main() -> int:
+    """Regenerate every icon asset from the brand kit."""
+    if not SOURCE_ICON.is_file():
+        raise SystemExit(f"Brand kit missing: {SOURCE_ICON}")
+    OUT.mkdir(parents=True, exist_ok=True)
+    generate_app_ico()
+    states = generate_tray_states()
+    generate_ui_shields()
+    produced = sorted(p.name for p in OUT.iterdir() if p.is_file())
+    print("Generated from brand kit:")
+    for name in produced:
+        print("  ", name)
+    print("states:", states)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - recovery module.
+"""Khokhar & Son's Antivirus - recovery module.
 
 Undoes cleanup operations recorded in cleanup_history (spec section
 47): recreates registry values from snapshots and re-creates scheduled

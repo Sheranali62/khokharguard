@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - settings page.
+"""Khokhar & Son's Antivirus - settings page.
 
 All user-configurable settings (spec section 42) organised in
 categories, plus exclusions management (spec section 29). Every change
@@ -15,13 +15,13 @@ import tkinter.ttk as ttk
 from ui.widgets import Card, ScrollFrame, add_tooltip
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 
 class SettingsPage(ttk.Frame):
     """Settings and exclusions management."""
 
-    def __init__(self, master: tk.Widget, app: "LocalGuardApp") -> None:
+    def __init__(self, master: tk.Widget, app: "KhokharGuardApp") -> None:
         super().__init__(master)
         self.app = app
         self._vars: dict = {}
@@ -41,9 +41,9 @@ class SettingsPage(ttk.Frame):
         ttk.Label(general, text="GENERAL", style="H2.TLabel").pack(
             anchor="w", pady=(0, 8))
 
-        self._check(general, "Start LocalGuard with Windows",
+        self._check(general, "Start KhokharGuard with Windows",
                     "general.start_with_windows",
-                    tooltip="Registers LocalGuard in the HKCU Run key "
+                    tooltip="Registers KhokharGuard in the HKCU Run key "
                             "(visible, reversible)")
         self._check(general, "Minimize to system tray",
                     "general.minimize_to_tray")
@@ -217,12 +217,12 @@ class SettingsPage(ttk.Frame):
             btn.pack(side="left", padx=(0, 8))
         add_tooltip(
             self._service_install_btn,
-            "Registers the LocalGuard protection service with Windows "
+            "Registers the KhokharGuard protection service with Windows "
             "(services.msc). Requires Administrator approval.")
         add_tooltip(
             self._service_start_btn,
             "Starts background real-time and USB protection that keeps "
-            "running when the LocalGuard window is closed.")
+            "running when the KhokharGuard window is closed.")
 
         # --- Updates ---
         updates = Card(container)
@@ -231,7 +231,7 @@ class SettingsPage(ttk.Frame):
             anchor="w", pady=(0, 4))
         ttk.Label(
             updates,
-            text="Signature updates are optional; LocalGuard works fully "
+            text="Signature updates are optional; KhokharGuard works fully "
                  "offline. Updates are fetched over HTTPS and verified "
                  "before installation. If a signing public key is "
                  "installed, only cryptographically signed update "
@@ -311,7 +311,7 @@ class SettingsPage(ttk.Frame):
         ttk.Label(privacy, text="PRIVACY", style="H2.TLabel").pack(
             anchor="w", pady=(0, 4))
         ttk.Label(privacy,
-                  text="LocalGuard is local-first. Telemetry, cloud "
+                  text="KhokharGuard is local-first. Telemetry, cloud "
                        "reputation and file uploads are OFF by default and "
                        "can stay OFF forever.",
                   style="CardDim.TLabel", wraplength=700,
@@ -323,7 +323,7 @@ class SettingsPage(ttk.Frame):
         self._check(privacy, "Allow file uploads (never recommended)",
                     "privacy.file_upload")
 
-        ttk.Label(container, text="LocalGuard Antivirus 1.0.0 - "
+        ttk.Label(container, text="Khokhar & Son's Antivirus 1.0.0 - "
                                   "local-first Windows malware protection",
                   style="Dim.TLabel").pack(pady=12)
 
@@ -458,9 +458,9 @@ class SettingsPage(ttk.Frame):
 
         if messagebox.askyesno(
             "Remove Service",
-            "Remove the LocalGuard background protection service?\n\n"
+            "Remove the KhokharGuard background protection service?\n\n"
             "Real-time and USB protection will then run only while the "
-            "LocalGuard window (or tray) is active.",
+            "KhokharGuard window (or tray) is active.",
             parent=self,
         ):
             self._service_run("uninstall", "Removing service...")
@@ -491,7 +491,7 @@ class SettingsPage(ttk.Frame):
         url = self.update_url_var.get().strip()
         if url and not url.lower().startswith("https://"):
             messagebox.showwarning(
-                "LocalGuard",
+                "KhokharGuard",
                 "Update URLs must use HTTPS for security. The URL was "
                 "not saved.", parent=self)
             self.update_url_var.set("")
@@ -505,7 +505,7 @@ class SettingsPage(ttk.Frame):
         if not self.app.settings.get(
                 "updates.signature_updates_enabled", True):
             messagebox.showinfo(
-                "LocalGuard",
+                "KhokharGuard",
                 "Signature updates are disabled in Settings.", parent=self)
             return
 
@@ -537,7 +537,7 @@ class SettingsPage(ttk.Frame):
                 style="CardDim.TLabel")
             return
         if messagebox.askyesno(
-                "LocalGuard",
+                "KhokharGuard",
                 f"Signature update {version} is available.\n\n"
                 "Download and install it now?",
                 parent=self):
@@ -577,7 +577,7 @@ class SettingsPage(ttk.Frame):
             text=f"Signature update {version} installed.",
             style="Card.TLabel")
         messagebox.showinfo(
-            "LocalGuard",
+            "KhokharGuard",
             f"Signature update {version} installed.\n\n"
             "New signatures are active immediately - no restart needed.",
             parent=self)
@@ -592,13 +592,13 @@ class SettingsPage(ttk.Frame):
         versions = svc.list_backups()
         if not versions:
             messagebox.showinfo(
-                "LocalGuard",
+                "KhokharGuard",
                 "No signature backups exist yet - nothing to roll back to.",
                 parent=self)
             return
         version = versions[0]
         if not messagebox.askyesno(
-                "LocalGuard",
+                "KhokharGuard",
                 f"Restore signatures from backup version {version}?\n\n"
                 "The current signature set will be replaced.",
                 parent=self):
@@ -608,11 +608,11 @@ class SettingsPage(ttk.Frame):
                 text=f"Signatures restored to version {version}.",
                 style="Card.TLabel")
             messagebox.showinfo(
-                "LocalGuard",
+                "KhokharGuard",
                 f"Signatures restored to version {version}.", parent=self)
         else:
             messagebox.showerror(
-                "LocalGuard", "Rollback failed - current signatures kept.",
+                "KhokharGuard", "Rollback failed - current signatures kept.",
                 parent=self)
 
     def _exclude_file(self) -> None:
@@ -645,7 +645,7 @@ class SettingsPage(ttk.Frame):
             self.app.add_exclusion("hash", answer.strip().lower())
             self.refresh()
         elif answer:
-            tk.messagebox.showwarning("LocalGuard",
+            tk.messagebox.showwarning("KhokharGuard",
                                       "A SHA-256 hash is 64 hex characters.",
                                       parent=self)
 
@@ -659,7 +659,7 @@ class SettingsPage(ttk.Frame):
             import tkinter.messagebox as messagebox
 
             messagebox.showinfo(
-                "LocalGuard",
+                "KhokharGuard",
                 "This exclusion is defined in the background service's "
                 "own scope and is shown read-only here.",
                 parent=self)

@@ -1,5 +1,5 @@
 /*
-    LocalGuard Antivirus - starter YARA rules: autorun abuse.
+    Khokhar & Son's Antivirus - starter YARA rules: autorun abuse.
 
     Rules for autorun.inf configurations used to auto-execute payloads
     from removable drives (spec section 10). An autorun.inf that merely
@@ -10,10 +10,10 @@
     on every USB scan.
 */
 
-rule LocalGuard_Autorun_Open_Script_Or_Hidden_Executable
+rule KhokharGuard_Autorun_Open_Script_Or_Hidden_Executable
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "autorun.inf auto-opens a script, interpreter, or hidden-window executable from the drive (classic USB autoplay dropper)"
         severity    = "high"
         category    = "autorun_abuse"
@@ -38,10 +38,10 @@ rule LocalGuard_Autorun_Open_Script_Or_Hidden_Executable
         and (1 of ($interp*) or $hidden or $script)
 }
 
-rule LocalGuard_Autorun_References_Hidden_System_Attributes
+rule KhokharGuard_Autorun_References_Hidden_System_Attributes
 {
     meta:
-        author      = "LocalGuard starter rules"
+        author      = "KhokharGuard starter rules"
         description = "autorun.inf uses useautoplay with shellexecute on a hidden system file combination - strong USB worm indicator when paired with an executable target"
         severity    = "medium"
         category    = "autorun_abuse"

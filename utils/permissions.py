@@ -1,8 +1,8 @@
-"""LocalGuard Antivirus - privilege helpers.
+"""Khokhar & Son's Antivirus - privilege helpers.
 
 Centralises everything related to Administrator privileges so the UI
 can display the elevation state and request elevation cleanly (spec
-section 27). LocalGuard never runs arbitrary commands with admin
+section 27). KhokharGuard never runs arbitrary commands with admin
 rights automatically.
 """
 
@@ -48,7 +48,7 @@ def needs_elevation_for(task: str) -> bool:
 # Human-readable explanations shown in confirmation dialogs.
 ELEVATION_REASONS: Dict[str, str] = {
     "service_cleanup": "Removing a malicious Windows service requires "
-                       "Administrator privileges. LocalGuard will show a UAC prompt.",
+                       "Administrator privileges. KhokharGuard will show a UAC prompt.",
     "hklm_cleanup": "Modifying machine-wide startup entries requires "
                     "Administrator privileges.",
     "task_cleanup": "Deleting certain scheduled tasks requires "

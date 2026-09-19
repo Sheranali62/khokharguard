@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Windows system tray icon.
+"""Khokhar & Son's Antivirus - Windows system tray icon.
 
 Provides the spec section 43 tray integration:
 
@@ -7,7 +7,7 @@ Provides the spec section 43 tray integration:
 
 Implementation notes:
 
-    - pystray is optional at runtime; :meth:`LocalGuardTray.start`
+    - pystray is optional at runtime; :meth:`KhokharGuardTray.start`
       returns False (and the app falls back to normal close behaviour)
       when pystray or Pillow is unavailable.
     - Icons are loaded from bundled assets (assets/icons/*.png,
@@ -42,11 +42,11 @@ from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
 from utils import get_logger
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
 logger = get_logger("tray")
 
-APP_TITLE = "LocalGuard Antivirus"
+APP_TITLE = "Khokhar & Son's Antivirus"
 
 # Asset locations: bundled data dir when frozen, repo when running
 # from source.
@@ -187,10 +187,10 @@ def state_icon(state: str) -> "Any":
     return _draw_shield(state=state)
 
 
-class LocalGuardTray:
-    """System tray icon bound to the running :class:`LocalGuardApp`."""
+class KhokharGuardTray:
+    """System tray icon bound to the running :class:`KhokharGuardApp`."""
 
-    def __init__(self, app: "LocalGuardApp",
+    def __init__(self, app: "KhokharGuardApp",
                  flash_interval: float = DEFAULT_FLASH_INTERVAL) -> None:
         self.app = app
         self.flash_interval = max(0.05, float(flash_interval))
@@ -222,7 +222,7 @@ class LocalGuardTray:
         self._state = self._current_state()
         menu = pystray.Menu(self._menu_items)
         self._icon = pystray.Icon(
-            "LocalGuard", icon=state_icon(self._state), title=APP_TITLE,
+            "KhokharGuard", icon=state_icon(self._state), title=APP_TITLE,
             menu=menu,
         )
 
@@ -514,13 +514,13 @@ class LocalGuardTray:
         self.app.ui_call(self.app.exit_application)
 
 
-def create_tray(app: "LocalGuardApp") -> Optional[LocalGuardTray]:
+def create_tray(app: "KhokharGuardApp") -> Optional[KhokharGuardTray]:
     """Create and start a tray icon; None when unsupported.
 
     Never raises: tray failure must not prevent the GUI from running.
     """
     try:
-        tray = LocalGuardTray(app)
+        tray = KhokharGuardTray(app)
         if tray.start():
             return tray
     except Exception:  # noqa: BLE001

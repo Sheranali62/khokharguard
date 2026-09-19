@@ -1,5 +1,5 @@
 -- ============================================================
--- LocalGuard Antivirus - SQLite schema
+-- Khokhar & Son's Antivirus - SQLite schema
 -- All access goes through database/database.py using
 -- parameterized queries. Never concatenate user input into SQL.
 -- ============================================================

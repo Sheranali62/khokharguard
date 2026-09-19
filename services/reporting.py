@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - report generation.
+"""Khokhar & Son's Antivirus - report generation.
 
 Produces human-readable TXT reports and machine-readable CSV/JSON
 exports for scan sessions (spec section 32). Reports contain only
@@ -44,7 +44,7 @@ def generate_text_report(scan_id: int) -> str:
     results = _scan_results(scan_id)
     lines = [
         "=" * 60,
-        "LOCALGUARD SECURITY REPORT",
+        "KHOKHARGUARD SECURITY REPORT",
         "=" * 60,
         "",
         f"Scan:              {_scan_type_label(str(scan['scan_type']))}",
@@ -88,7 +88,7 @@ def generate_text_report(scan_id: int) -> str:
         "DISCLAIMER",
         "-" * 60,
         "No antivirus can guarantee detection or removal of every threat.",
-        "LocalGuard is designed to complement Windows Security.",
+        "KhokharGuard is designed to complement Windows Security.",
         "",
     ])
     return "\n".join(lines)

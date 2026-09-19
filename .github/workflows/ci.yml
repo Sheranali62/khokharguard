@@ -1,11 +1,11 @@
-# Continuous integration for LocalGuard Antivirus.
+# Continuous integration for Khokhar & Son's Antivirus.
 #
 # Runs on Windows (the target platform) on every push and pull request:
 #
 #   1. Byte-compile every module   (python -m compileall)
 #   2. Unit + integration tests    (pytest, fully sandboxed)
-#   3. Frozen build                (PyInstaller, localguard.spec)
-#   4. Installer compile           (Inno Setup, LocalGuard_Setup.iss)
+#   3. Frozen build                (PyInstaller, khokharguard.spec)
+#   4. Installer compile           (Inno Setup, KhokharGuard_Setup.iss)
 #
 # The frozen build steps are skipped for pull requests from forks.
 # Version tags (v*) additionally upload the installer and portable
@@ -97,7 +97,7 @@ jobs:
       # ----------------------------------------------------------------
       - name: Build frozen executable (PyInstaller)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
-        run: pyinstaller localguard.spec --noconfirm
+        run: pyinstaller khokharguard.spec --noconfirm
 
       # ----------------------------------------------------------------
       # 3b. Authenticode signing (Azure Artifact Signing, formerly
@@ -136,7 +136,7 @@ jobs:
           endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ env.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ env.AZURE_SIGNING_CERT_PROFILE }}
-          files-folder: ${{ github.workspace }}\dist\LocalGuard
+          files-folder: ${{ github.workspace }}\dist\KhokharGuard
           files-folder-filter: exe,dll
           files-folder-recurse: true
           file-digest: SHA256
@@ -146,7 +146,7 @@ jobs:
       - name: Smoke-test frozen CLI
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         run: |
-          $out = & .\dist\LocalGuard\LocalGuard.exe version
+          $out = & .\dist\KhokharGuard\KhokharGuard.exe version
           $out | Out-String | Write-Host
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -164,7 +164,7 @@ jobs:
             $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           }
           if (-not (Test-Path $iscc)) { throw "Inno Setup compiler not found" }
-          & $iscc installer\LocalGuard_Setup.iss /O"dist\installer"
+          & $iscc installer\KhokharGuard_Setup.iss /O"dist\installer"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # Sign the freshly built installer too, when signing is enabled.
@@ -178,7 +178,7 @@ jobs:
           endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ env.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ env.AZURE_SIGNING_CERT_PROFILE }}
-          files: ${{ github.workspace }}\dist\installer\LocalGuard_Setup_${{ github.ref_name }}.exe
+          files: ${{ github.workspace }}\dist\installer\KhokharGuard_Setup_${{ github.ref_name }}.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
@@ -195,7 +195,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v6
         with:
-          name: LocalGuard-Setup-${{ github.ref_name }}
+          name: KhokharGuard-Setup-${{ github.ref_name }}
           path: dist/installer/*.exe
           if-no-files-found: error
 
@@ -203,6 +203,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v6
         with:
-          name: LocalGuard-portable-${{ github.ref_name }}
-          path: dist/LocalGuard/
+          name: KhokharGuard-portable-${{ github.ref_name }}
+          path: dist/KhokharGuard/
           if-no-files-found: error

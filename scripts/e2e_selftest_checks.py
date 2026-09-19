@@ -43,13 +43,13 @@ for directory in (_appdata / "config", _logs, _reports, _quarantine,
 
 paths.app_data_dir = lambda: _appdata
 paths.logs_dir = lambda: _logs
-paths.log_file_path = lambda: _logs / "localguard.log"
+paths.log_file_path = lambda: _logs / "khokharguard.log"
 paths.reports_dir = lambda: _reports
 paths.quarantine_dir = lambda: _quarantine
 paths.signatures_dir = lambda: _signatures
 paths.hashes_signature_path = lambda: _signatures / "hashes.json"
 paths.yara_rules_dir = lambda: _signatures / "yara"
-paths.database_path = lambda: _database / "localguard.db"
+paths.database_path = lambda: _database / "khokharguard.db"
 paths.settings_path = lambda: _appdata / "config" / "settings.json"
 
 # Seed the sandboxed signature store from the repo's bundled file
@@ -85,7 +85,7 @@ def main() -> int:
     import tkinter.messagebox as messagebox
 
     import utils.notify as notify_module
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
 
     # ------------------------------------------------------------------
     # Recorder + gate for the confirm dialog (user says OK)
@@ -135,7 +135,7 @@ def main() -> int:
 
     root = tk.Tk()
     root.withdraw()
-    app = LocalGuardApp(root)
+    app = KhokharGuardApp(root)
 
     about_page = app.pages["about"]
     button = about_page._self_test_button
@@ -179,7 +179,7 @@ def main() -> int:
     import glob
 
     leftovers = glob.glob(str(Path(tempfile.gettempdir()) /
-                              "localguard_eicar_*"))
+                              "khokharguard_eicar_*"))
     check("no leftover EICAR temp dirs (best-effort cleanup)",
           True, f"remaining={len(leftovers)} (AV locks can defer removal)")
     REPORT["eicar_temp_leftovers"] = len(leftovers)

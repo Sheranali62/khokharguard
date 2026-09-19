@@ -1,35 +1,35 @@
 ; ============================================================
-; LocalGuard Antivirus - Inno Setup installer script
-; Build: 1) pyinstaller localguard.spec --noconfirm
-;        2) iscc installer\LocalGuard_Setup.iss
+; Khokhar & Son's Antivirus - Inno Setup installer script
+; Build: 1) pyinstaller khokharguard.spec --noconfirm
+;        2) iscc installer\KhokharGuard_Setup.iss
 ; ============================================================
 
-#define MyAppName "LocalGuard Antivirus"
+#define MyAppName "Khokhar & Son's Antivirus"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "LocalGuard"
-#define MyAppExeName "LocalGuard.exe"
+#define MyAppPublisher "Khokhar & Son's"
+#define MyAppExeName "KhokharGuard.exe"
 
 [Setup]
-AppId={{8C6B2F1A-4E93-4B7D-9A51-LOCALGUARD100}
+AppId={{84E1646A-48F8-467D-939C-3BD9A120208E}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\LocalGuard
+DefaultDirName={autopf}\KhokharGuard
 DefaultGroupName={#MyAppName}
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 OutputDir=..\dist\installer
-OutputBaseFilename=LocalGuard_Setup_{#MyAppVersion}
+OutputBaseFilename=KhokharGuard_Setup_{#MyAppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
-; Allow non-admin users to install per-user: LocalGuard_Setup.exe /CURRENTUSER
+; Allow non-admin users to install per-user: KhokharGuard_Setup.exe /CURRENTUSER
 ; installs into %LOCALAPPDATA%\Programs with a per-user Start Menu entry.
 PrivilegesRequiredOverridesAllowed=commandline
 MinVersion=6.3
-SetupIconFile=..\assets\icons\localguard.ico
+SetupIconFile=..\assets\icons\khokharantivirus.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -37,18 +37,18 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; \
     GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Start LocalGuard when Windows starts"; \
+Name: "autostart"; Description: "Start KhokharGuard when Windows starts"; \
     GroupDescription: "Startup:"; Flags: unchecked
 
 [Files]
-Source: "..\dist\LocalGuard\*"; DestDir: "{app}"; \
+Source: "..\dist\KhokharGuard\*"; DestDir: "{app}"; \
     Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Dirs]
-Name: "{userappdata}\LocalGuard"; Flags: uninsneveruninstall
-Name: "{userappdata}\LocalGuard\logs"
-Name: "{userappdata}\LocalGuard\quarantine"
-Name: "{userappdata}\LocalGuard\reports"
+Name: "{userappdata}\KhokharGuard"; Flags: uninsneveruninstall
+Name: "{userappdata}\KhokharGuard\logs"
+Name: "{userappdata}\KhokharGuard\quarantine"
+Name: "{userappdata}\KhokharGuard\reports"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -58,7 +58,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
-    ValueType: string; ValueName: "LocalGuard"; \
+    ValueType: string; ValueName: "KhokharGuard"; \
     ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart; \
     Flags: uninsdeletevalue
 

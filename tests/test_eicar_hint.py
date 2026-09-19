@@ -32,13 +32,13 @@ def test_environment_snapshot_reports_admin(monkeypatch):
         raise RuntimeError("no defender")
 
     monkeypatch.setattr(windows_utils, "get_defender_status", boom)
-    monkeypatch.setattr(windows_utils, "localguard_in_defender_exclusions",
+    monkeypatch.setattr(windows_utils, "khokharguard_in_defender_exclusions",
                         lambda: None)
 
     snapshot = _environment_snapshot()
     assert snapshot["is_admin"] is True
     assert snapshot["defender_active"] is None
-    assert snapshot["localguard_excluded"] is None
+    assert snapshot["khokharguard_excluded"] is None
 
 
 def test_environment_snapshot_reads_defender(monkeypatch):
@@ -51,11 +51,11 @@ def test_environment_snapshot_reads_defender(monkeypatch):
         windows_utils, "get_defender_status",
         lambda: {"available": True, "realtime_enabled": True})
     monkeypatch.setattr(windows_utils,
-                        "localguard_in_defender_exclusions", lambda: False)
+                        "khokharguard_in_defender_exclusions", lambda: False)
 
     snapshot = _environment_snapshot()
     assert snapshot["defender_active"] is True
-    assert snapshot["localguard_excluded"] is False
+    assert snapshot["khokharguard_excluded"] is False
 
 
 def test_hint_mentions_exclusion_path():
@@ -64,21 +64,21 @@ def test_hint_mentions_exclusion_path():
     from ui.eicar_selftest import _interference_hint
 
     hint = _interference_hint({"defender_active": True,
-                               "localguard_excluded": False,
+                               "khokharguard_excluded": False,
                                "is_admin": False})
     assert "Exclusions" in hint
     assert "Windows Security" in hint
-    assert "not a LocalGuard defect" in hint
+    assert "not a KhokharGuard defect" in hint
     assert "you are not" in hint  # admin status reflected
 
 
 def test_hint_reflects_exclusion_and_admin_state():
-    """The hint adapts when LocalGuard is already excluded / user is
+    """The hint adapts when KhokharGuard is already excluded / user is
     admin."""
     from ui.eicar_selftest import _interference_hint
 
     excluded = _interference_hint({"defender_active": True,
-                                   "localguard_excluded": True,
+                                   "khokharguard_excluded": True,
                                    "is_admin": True})
     assert "already listed" in excluded
     assert "you are" in excluded and "you are not" not in excluded
@@ -98,7 +98,7 @@ def test_self_test_reports_active_av(monkeypatch, tmp_path):
     monkeypatch.setattr(est, "safe_temp_dir", blocked_temp)
     monkeypatch.setattr(est, "_environment_snapshot",
                         lambda: {"defender_active": True,
-                                 "localguard_excluded": False,
+                                 "khokharguard_excluded": False,
                                  "is_admin": False})
 
     # Simulate Defender removing the file between write and read.
@@ -116,7 +116,7 @@ def test_self_test_reports_active_av(monkeypatch, tmp_path):
     assert result["status"] == "another_av_active"
     assert "Exclusions" in result["detail"]
     assert result["defender_active"] is True
-    assert result["localguard_excluded"] is False
+    assert result["khokharguard_excluded"] is False
 
 
 def test_self_test_detected_includes_environment(monkeypatch, tmp_path):
@@ -133,7 +133,7 @@ def test_self_test_detected_includes_environment(monkeypatch, tmp_path):
     from engine.signature_engine import EICAR_SHA256, EICAR_STRING
     import ui.eicar_selftest as est
 
-    env = {"defender_active": False, "localguard_excluded": True,
+    env = {"defender_active": False, "khokharguard_excluded": True,
            "is_admin": True}
 
     # Mimic the module's own success-path return shape (source check
@@ -195,7 +195,7 @@ def _make_app(detections: Dict[str, Any]) -> Any:
     """Minimal app surface for the detection pipeline."""
 
     class FakeApp:
-        """Stands in for LocalGuardApp."""
+        """Stands in for KhokharGuardApp."""
 
         def __init__(self) -> None:
             self.protection = _FakeProtection()
@@ -225,7 +225,7 @@ def _make_app(detections: Dict[str, Any]) -> Any:
 def test_realtime_detection_sets_tray_warning(test_settings, monkeypatch):
     """A realtime detection drives the tray into the warning state."""
     from engine.file_analyzer import Detection
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
     import utils.notify as notify_module
 
     # Stub delivery so the sandboxed suite never reaches PowerShell.
@@ -233,7 +233,7 @@ def test_realtime_detection_sets_tray_warning(test_settings, monkeypatch):
 
     app = _make_app({})
     # Bind the unbound method to the fake app (avoids Tk construction).
-    LocalGuardApp._on_scan_detection(app, Detection(path="C:\\x\\bad.js"))
+    KhokharGuardApp._on_scan_detection(app, Detection(path="C:\\x\\bad.js"))
 
     import time
 
@@ -254,7 +254,7 @@ def test_realtime_detection_sends_notification(test_settings, monkeypatch):
     attribute.
     """
     from engine.file_analyzer import Detection
-    from ui.app import LocalGuardApp
+    from ui.app import KhokharGuardApp
     from utils import notify as notify_module
 
     calls: List[tuple] = []
@@ -264,10 +264,10 @@ def test_realtime_detection_sends_notification(test_settings, monkeypatch):
             calls.append((kind, title, message)) or True)
 
     app = _make_app({})
-    LocalGuardApp._on_scan_detection(
+    KhokharGuardApp._on_scan_detection(
         app, Detection(path="C:\\x\\evil.js", detection_name="Test.Evil"))
 
-    assert calls == [("threat_detected", "LocalGuard - Threat Detected",
+    assert calls == [("threat_detected", "KhokharGuard - Threat Detected",
                       "Test.Evil: evil.js")]
 
 

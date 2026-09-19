@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - startup entry cleanup.
+"""Khokhar & Son's Antivirus - startup entry cleanup.
 
 Removes startup persistence entries ONLY after explicit user
 confirmation, and always records a restore snapshot first (spec

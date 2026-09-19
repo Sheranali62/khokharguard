@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - scheduled task cleanup.
+"""Khokhar & Son's Antivirus - scheduled task cleanup.
 
 Deletes scheduled tasks only with explicit user confirmation, keeping
 an XML export of the task definition in cleanup_history for recovery

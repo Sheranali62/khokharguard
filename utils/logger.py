@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - logging setup.
+"""Khokhar & Son's Antivirus - logging setup.
 
 Creates logs/localguard.log plus a console handler. Provides a log
 sanitiser so secrets (passwords, tokens, keys) are never written to

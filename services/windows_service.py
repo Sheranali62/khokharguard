@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - background protection service core.
+"""Khokhar & Son's Antivirus - background protection service core.
 
 Implements the spec section 45 model with a clear split:
 
@@ -685,7 +685,7 @@ class ProtectionServiceCore:
         gui_consuming = (time.monotonic() - self._last_gui_poll) < 15.0
         if not gui_consuming:
             try:
-                notify("threat_detected", "LocalGuard - Threat Detected",
+                notify("threat_detected", "KhokharGuard - Threat Detected",
                        f"{detection.detection_name}: "
                        f"{Path(detection.path).name}")
             except Exception:  # noqa: BLE001

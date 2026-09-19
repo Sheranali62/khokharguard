@@ -1,4 +1,4 @@
-"""LocalGuard Antivirus - Windows integration helpers.
+"""Khokhar & Son's Antivirus - Windows integration helpers.
 
 Privilege detection, drive enumeration, registry helpers, Defender /
 Windows Security status, and safe process launching. All functions
@@ -32,7 +32,7 @@ def is_admin() -> bool:
 
 
 def request_elevation(working_dir: Optional[str] = None) -> bool:
-    """Re-launch LocalGuard with UAC elevation. Returns True if started.
+    """Re-launch KhokharGuard with UAC elevation. Returns True if started.
 
     Uses ShellExecuteW 'runas' - the standard clean UAC prompt. No
     arbitrary commands are executed with the elevated token.
@@ -198,8 +198,8 @@ HKEY_LOCAL_MACHINE = 0x80000002 if IS_WINDOWS else 0
 # Microsoft Defender / Windows Security status
 # ---------------------------------------------------------------------------
 
-def localguard_in_defender_exclusions() -> Optional[bool]:
-    """Check whether LocalGuard's process is in Defender's exclusions.
+def khokharguard_in_defender_exclusions() -> Optional[bool]:
+    """Check whether KhokharGuard's process is in Defender's exclusions.
 
     Reads the read-only preference ``ExclusionProcess`` from
     ``SOFTWARE\\Microsoft\\Windows Defender\\Exclusions`` in HKLM (no
