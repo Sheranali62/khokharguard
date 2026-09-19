@@ -38,6 +38,11 @@ if yara_rules.is_dir():
     for rule in yara_rules.glob("*.yar"):
         datas.append((str(rule), "signatures/yara"))
 
+# Upgrade guide (surfaced from the migration summary dialog).
+upgrade_doc = ROOT / "docs" / "UPGRADING.md"
+if upgrade_doc.is_file():
+    datas.append((str(upgrade_doc), "docs"))
+
 hiddenimports = [
     "psutil",
     "watchdog.observers",

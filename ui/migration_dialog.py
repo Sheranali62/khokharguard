@@ -2,19 +2,50 @@
 
 Shown once after a successful pre-rebrand import (utils/migration.py):
 summarises what was brought over and offers a shortcut to review the
-imported quarantine records. Pure presentation - the migration itself
-already ran in main.py before the GUI was constructed.
+imported quarantine records plus the full upgrade guide
+(docs/UPGRADING.md, bundled in frozen builds). Pure presentation - the
+migration itself already ran in main.py before the GUI was constructed.
 """
 
 from __future__ import annotations
 
+import sys
 import tkinter as tk
-from typing import TYPE_CHECKING, Any, Dict
+import webbrowser
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import tkinter.ttk as ttk
 
 from ui.theme import colors
 from ui.widgets import Card, add_tooltip
+
+#: Repo-relative location of the upgrade guide (bundled by the spec).
+GUIDE_REL = Path("docs") / "UPGRADING.md"
+#: Online fallback when the local copy is unavailable.
+GUIDE_URL = (
+    "https://github.com/Sheranali62/khokharguard/blob/main/docs/UPGRADING.md"
+)
+
+
+def guide_path() -> Optional[Path]:
+    """Return the local upgrade guide, or None when only the web copy exists."""
+    roots = []
+    meipass = getattr(sys, "_MEIPASS", None)  # PyInstaller bundle root
+    if meipass:
+        roots.append(Path(meipass))
+    roots.append(Path(__file__).resolve().parent.parent)  # source checkout
+    for root in roots:
+        candidate = root / GUIDE_REL
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def open_guide() -> None:
+    """Open the upgrade guide - local file when present, GitHub otherwise."""
+    local = guide_path()
+    webbrowser.open(local.as_uri() if local is not None else GUIDE_URL)
 
 
 def _card_bg() -> str:
@@ -35,7 +66,7 @@ class MigrationSummaryDialog(tk.Toplevel):
         super().__init__(app.root)
         self.app = app
         self.title("Data import complete")
-        self.geometry("480x420")
+        self.geometry("480x470")
         self.transient(app.root)
         self.grab_set()
 
@@ -87,6 +118,15 @@ class MigrationSummaryDialog(tk.Toplevel):
             add_tooltip(review,
                         "Opens the Quarantine page where you can inspect, "
                         "restore, or delete the imported records")
+
+        # --- Full upgrade guide -------------------------------------------
+        guide_btn = ttk.Button(
+            card, text="Open full upgrade guide", command=open_guide)
+        guide_btn.pack(fill="x", pady=(2, 0))
+        add_tooltip(
+            guide_btn,
+            "Opens docs/UPGRADING.md: the complete 1.0.0 to 1.1.0 upgrade "
+            "path, what was imported, and rollback instructions")
 
         ttk.Button(card, text="Close",
                    command=self.destroy).pack(fill="x", pady=(4, 0))
