@@ -247,3 +247,91 @@ def test_file_analyzer_uses_yara_for_scripts(rules_dir, tmp_path):
         "YARA.LocalGuard_Script_PowerShell_Download_Cradle")
     assert "PowerShell" in detection.reason  # rule description surfaced
     database.close()
+
+
+# ---------------------------------------------------------------------------
+# Hot reload: rule files changing under signatures/yara/ without restart
+# ---------------------------------------------------------------------------
+
+
+PROBE_A = (
+    'rule LocalGuard_HotProbe_A\n'
+    '{\n'
+    '    strings:\n'
+    '        $a = "LOCALGUARD-HOT-RELOAD-PAYLOAD-A"\n'
+    '    condition:\n'
+    '        $a\n'
+    '}\n'
+)
+
+PROBE_B = (
+    'rule LocalGuard_HotProbe_B\n'
+    '{\n'
+    '    strings:\n'
+    '        $a = "LOCALGUARD-HOT-RELOAD-PAYLOAD-B"\n'
+    '    condition:\n'
+    '        $a\n'
+    '}\n'
+)
+
+PAYLOAD_A = b"x LOCALGUARD-HOT-RELOAD-PAYLOAD-A x"
+PAYLOAD_B = b"x LOCALGUARD-HOT-RELOAD-PAYLOAD-B x"
+
+
+def _hits(engine: YaraEngine, data: bytes, rule: str) -> bool:
+    """True when the named rule fires on the in-memory sample."""
+    matches = engine.scan_data(data) or []
+    return any(m.rule == rule for m in matches)
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
+def test_new_rule_file_is_picked_up_without_restart(rules_dir):
+    """Dropping a rule file in applies it on the next scan."""
+    engine = _engine(rules_dir)
+    assert not _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B")
+
+    _write(rules_dir, "hot_b.yar", PROBE_B)
+    assert _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B"), (
+        "new rule must apply without an explicit reload()")
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
+def test_edited_rule_is_picked_up_without_restart(rules_dir):
+    """Editing a rule file's pattern applies on the next scan."""
+    _write(rules_dir, "hot_a.yar", PROBE_A.replace("PAYLOAD-A", "OLD"))
+    engine = _engine(rules_dir)
+    assert not _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+
+    _write(rules_dir, "hot_a.yar", PROBE_A)
+    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
+def test_deleted_rule_stops_matching(rules_dir):
+    """Removing a rule file retires its detections."""
+    _write(rules_dir, "hot_a.yar", PROBE_A)
+    engine = _engine(rules_dir)
+    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+
+    (rules_dir / "hot_a.yar").unlink()
+    assert not _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
+def test_broken_edit_keeps_last_good_rule_set(rules_dir):
+    """A bad edit never blanks protection: old rules stay, then recover."""
+    _write(rules_dir, "hot_a.yar", PROBE_A)
+    engine = _engine(rules_dir)
+    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+
+    # Break every rule file: wholesale compilation must fail...
+    _write(rules_dir, "hot_a.yar", "rule Broken { strings: $a = ")
+    # ...yet the last good set stays active, and other rules still work.
+    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A"), (
+        "broken edit must not disable the previous good rule set")
+
+    # Fixing the file recovers compilation and enables new rules.
+    _write(rules_dir, "hot_a.yar", PROBE_A)
+    _write(rules_dir, "hot_b.yar", PROBE_B)
+    assert _hits(engine, PAYLOAD_A, "LocalGuard_HotProbe_A")
+    assert _hits(engine, PAYLOAD_B, "LocalGuard_HotProbe_B")

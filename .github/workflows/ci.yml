@@ -36,20 +36,33 @@ jobs:
     # absent, the signing steps skip themselves and artefacts are
     # published unsigned. Exported at job level so step-level
     # ``if: env.X != ''`` conditions are reliable.
+    #
+    # Two authentication paths, tried in this order:
+    #   1. OIDC workload identity (no stored secret): set the
+    #      AZURE_CLIENT_ID / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID
+    #      secrets and add a federated credential to the app
+    #      registration (see docs/AZURE_SIGNING_SETUP.md).
+    #   2. Client-secret fallback: additionally set
+    #      AZURE_CLIENT_SECRET.
     env:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
       AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
       AZURE_SIGNING_CERT_PROFILE: ${{ secrets.AZURE_SIGNING_CERT_PROFILE }}
 
+    permissions:
+      contents: read
+      id-token: write   # OIDC workload identity federation for azure/login
+
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -88,20 +101,36 @@ jobs:
 
       # ----------------------------------------------------------------
       # 3b. Authenticode signing (Azure Artifact Signing, formerly
-      #     Trusted Signing). Skipped when the Azure secrets are not
+      #     Trusted Signing). Skipped when no Azure signing secrets are
       #     configured - unsigned artefacts still build, publish, and
       #     install; they just trigger SmartScreen until signing is
-      #     set up. Enable by adding these repository secrets:
-      #       AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET
-      #       AZURE_SIGNING_ENDPOINT / AZURE_SIGNING_ACCOUNT
-      #       AZURE_SIGNING_CERT_PROFILE
-      #     (An Artifact Signing account with a certificate profile is
-      #     required in the Azure tenant; see the signing docs.)
+      #     set up.
+      #
+      #     Preferred setup (no stored secret): configure OIDC
+      #     federation and set AZURE_CLIENT_ID, AZURE_TENANT_ID and
+      #     AZURE_SUBSCRIPTION_ID; the azure/login step below then
+      #     establishes workload-identity credentials that the signing
+      #     action's DefaultAzureCredential picks up.
+      #     Fallback: also set AZURE_CLIENT_SECRET and the signing
+      #     action authenticates from the environment directly.
+      #     Account setup is documented in docs/AZURE_SIGNING_SETUP.md.
       # ----------------------------------------------------------------
+      - name: Azure login (OIDC workload identity)
+        if: ${{
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) &&
+          env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET == '' &&
+          env.AZURE_TENANT_ID != '' && env.AZURE_SUBSCRIPTION_ID != '' }}
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Sign frozen binaries (Authenticode)
         if: ${{
           (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) &&
-          env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
+          env.AZURE_CLIENT_ID != '' &&
+          (env.AZURE_CLIENT_SECRET != '' || env.AZURE_SUBSCRIPTION_ID != '') }}
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
@@ -142,7 +171,8 @@ jobs:
       - name: Sign installer (Authenticode)
         if: ${{
           startsWith(github.ref, 'refs/tags/v') &&
-          env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
+          env.AZURE_CLIENT_ID != '' &&
+          (env.AZURE_CLIENT_SECRET != '' || env.AZURE_SUBSCRIPTION_ID != '') }}
         uses: azure/artifact-signing-action@v2
         with:
           endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
@@ -163,7 +193,7 @@ jobs:
 
       - name: Upload installer artefact
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LocalGuard-Setup-${{ github.ref_name }}
           path: dist/installer/*.exe
@@ -171,7 +201,7 @@ jobs:
 
       - name: Upload portable bundle artefact
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LocalGuard-portable-${{ github.ref_name }}
           path: dist/LocalGuard/

@@ -4,6 +4,35 @@ All notable changes to LocalGuard Antivirus are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Authenticated quarantine actions over IPC:** the GUI can now ask the
+  background service to restore or permanently delete service-quarantined
+  items (`quarantine_restore` / `quarantine_delete`). The service refuses
+  anything without the explicit `user_confirmed` flag that travels with
+  the authenticated request, refuses unknown records, and writes a
+  security event for the audit trail. The quarantine page marks
+  service-origin rows (`[service]`) and routes their Restore/Delete
+  through the IPC path; failures surface as ordinary error messages.
+- **YARA hot reload:** rule files added to, edited in, or removed from
+  `signatures/yara/` apply on the next scan without restarting
+  protection. The engine fingerprints the rule directory per scan and
+  recompiles only on change; a broken edit keeps the last good rule set
+  active and the engine recovers automatically once the file is fixed.
+
+### Changed
+
+- CI: signing now prefers **OIDC workload identity federation**
+  (`azure/login@v3` + `id-token: write`) over the stored client secret;
+  the client-secret triple remains a fallback. New optional secret
+  `AZURE_SUBSCRIPTION_ID`. Configuration is documented in
+  `docs/AZURE_SIGNING_SETUP.md`.
+- CI: actions bumped to Node 24 runtimes (`checkout@v5`,
+  `setup-python@v6`, `upload-artifact@v6`) clearing the Node 20
+  deprecation annotations.
+
 ## [1.0.0] - 2026-09-18
 
 Initial release.

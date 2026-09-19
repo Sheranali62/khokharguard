@@ -58,7 +58,41 @@ class YaraEngine:
         self._rules_dir = Path(rules_dir) if rules_dir else paths.yara_rules_dir()
         self._rules = None
         self._compiled = False
+        # Snapshot of the rule files on disk (name, size, mtime_ns);
+        # compared before each scan so new/edited/removed rules are
+        # picked up without restarting protection.
+        self._snapshot: Optional[tuple] = None
         if YARA_AVAILABLE:
+            self.reload()
+
+    def _rule_set_snapshot(self) -> tuple:
+        """Fingerprint of the rule directory's current contents."""
+        fingerprint = []
+        try:
+            for path in sorted(self._rules_dir.glob("*.y*")):
+                try:
+                    stat = path.stat()
+                except OSError:
+                    continue
+                fingerprint.append(
+                    (path.name, stat.st_size, stat.st_mtime_ns))
+        except OSError:
+            pass
+        return tuple(fingerprint)
+
+    def _ensure_fresh(self) -> None:
+        """Reload the rule set when files under the rules dir changed.
+
+        Cheap stat comparison per scan; an actual recompile only
+        happens when the fingerprint differs. Compilation failures
+        keep the last good rule set (reload() logs and leaves
+        ``self._rules`` untouched until a compile succeeds).
+        """
+        if not YARA_AVAILABLE:
+            return
+        snapshot = self._rule_set_snapshot()
+        if snapshot != self._snapshot:
+            logger.info("YARA rule changes detected on disk - reloading")
             self.reload()
 
     @property
@@ -67,8 +101,15 @@ class YaraEngine:
         return YARA_AVAILABLE
 
     def reload(self) -> int:
-        """(Re)compile all .yar/.yara files; return number of rules."""
-        self._rules = None
+        """(Re)compile all .yar/.yara files; return number of files.
+
+        On a compilation failure the previous (last good) rule set
+        stays active and the fingerprint is recorded anyway, so the
+        engine does not retry per scan; fixing the file triggers a
+        fresh attempt on the next scan. ``validate_rules`` reports
+        the offending files.
+        """
+        self._snapshot = self._rule_set_snapshot()
         self._compiled = False
         if not YARA_AVAILABLE:
             logger.info("YARA not installed - rule scanning disabled")
@@ -89,13 +130,18 @@ class YaraEngine:
                 logger.warning("Could not read YARA rule %s: %s", path, exc)
 
         try:
-            self._rules = yara.compile(sources=sources)  # type: ignore[union-attr]
-            self._compiled = True
-            logger.info("YARA rules compiled: %d files", len(sources))
-            return len(sources)
+            compiled = yara.compile(sources=sources)  # type: ignore[union-attr]
         except yara.Error as exc:  # type: ignore[union-attr]
-            logger.error("YARA compilation failed: %s", exc)
+            # Keep the previous good rule set active (if any); only a
+            # completely empty directory disables YARA scanning.
+            self._compiled = self._rules is not None
+            logger.error(
+                "YARA compilation failed - keeping previous rule set: %s", exc)
             return 0
+        self._rules = compiled
+        self._compiled = True
+        logger.info("YARA rules compiled: %d files", len(sources))
+        return len(sources)
 
     def validate_rules(self) -> List[str]:
         """Return list of rule files that fail validation."""
@@ -112,6 +158,7 @@ class YaraEngine:
 
     def scan_file(self, path: Path) -> Optional[List[YaraMatch]]:
         """Scan one file; None when YARA is unavailable/failed."""
+        self._ensure_fresh()
         if not YARA_AVAILABLE or not self._compiled or self._rules is None:
             return None
         try:
@@ -131,6 +178,7 @@ class YaraEngine:
         memory - avoids writing temp files and any on-access scanner
         interference with the bytes being inspected.
         """
+        self._ensure_fresh()
         if not YARA_AVAILABLE or not self._compiled or self._rules is None:
             return None
         try:

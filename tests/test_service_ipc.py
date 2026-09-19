@@ -68,7 +68,8 @@ def test_method_allowlist_is_fixed():
     """The IPC surface is a fixed allow-list - no arbitrary dispatch."""
     assert IPC_METHODS == ("status", "pause", "resume",
                            "apply_settings", "shutdown",
-                           "recent_findings", "get_history")
+                           "recent_findings", "get_history",
+                           "quarantine_restore", "quarantine_delete")
 
 
 def test_roundtrip_authenticated_call(client):
@@ -751,3 +752,182 @@ def test_exclusions_view_degrades_without_service(test_database):
     app.database = test_database
     app.background_protection = False
     assert [r["value"] for r in app.list_exclusions_merged()] == [".log"]
+
+
+# ---------------------------------------------------------------------------
+# Quarantine actions over IPC (GUI-confirmed restore/delete)
+# ---------------------------------------------------------------------------
+
+
+def test_quarantine_restore_requires_confirmation(service_core):
+    """A request without user_confirmed must not touch the vault."""
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("quarantine_restore",
+                           {"quarantine_id": 1, "user_confirmed": False})
+    assert "error" in response
+    assert "confirmation" in response["error"].lower()
+
+
+def test_quarantine_action_rejects_bad_id(service_core):
+    """Non-integer IDs are refused with a clean error, never a crash."""
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("quarantine_delete", {"quarantine_id": "x",
+                                                 "user_confirmed": True})
+    assert "error" in response
+    assert "integer" in response["error"].lower()
+
+
+def test_quarantine_action_unknown_id_is_clean_error(service_core):
+    """An unknown record id surfaces as an error response."""
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("quarantine_restore",
+                           {"quarantine_id": 424242, "user_confirmed": True})
+    assert "error" in response
+    assert "not found" in response["error"].lower()
+
+
+def test_quarantine_restore_via_ipc(service_core, tmp_path):
+    """Full loop: quarantine a file, restore it over authenticated IPC."""
+    original = tmp_path / "report.txt"
+    original.write_text("harmless report body", encoding="utf-8")
+
+    manager = service_core._quarantine_manager()
+    record = manager.quarantine_file(
+        original, "Test.Threat", detection_type="signature",
+        severity="high")
+    assert not original.exists()  # quarantined away
+
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("quarantine_restore", {
+        "quarantine_id": record["quarantine_id"], "user_confirmed": True,
+    })
+    assert response.get("ok") is True
+    assert original.exists()
+    assert original.read_text(encoding="utf-8") == "harmless report body"
+    stored = service_core.database.get_quarantine_record(
+        record["quarantine_id"])
+    assert stored["status"] == "RESTORED"
+
+
+def test_quarantine_delete_via_ipc(service_core, tmp_path):
+    """Full loop: quarantine a file, permanently delete it over IPC."""
+    original = tmp_path / "evil.bin"
+    original.write_bytes(b"MZ fake payload for delete test")
+
+    manager = service_core._quarantine_manager()
+    record = manager.quarantine_file(original, "Test.Deleted")
+    assert not original.exists()
+
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    response = client.call("quarantine_delete", {
+        "quarantine_id": record["quarantine_id"], "user_confirmed": True,
+    })
+    assert response.get("ok") is True
+    assert not original.exists()
+    stored = service_core.database.get_quarantine_record(
+        record["quarantine_id"])
+    assert stored["status"] == "DELETED"
+
+
+def test_quarantine_action_writes_security_event(service_core, tmp_path):
+    """Actions leave a visible audit trail in the security event log."""
+    original = tmp_path / "audited.txt"
+    original.write_text("audit me", encoding="utf-8")
+    record = service_core._quarantine_manager().quarantine_file(
+        original, "Test.Audit")
+
+    client = ServiceIPCClient(port=service_core.ipc.port,
+                              token=service_core.ipc.token)
+    client.call("quarantine_delete",
+                {"quarantine_id": record["quarantine_id"],
+                 "user_confirmed": True})
+    events = service_core.database.list_events(limit=10)
+    assert any(e.get("event_type") in {"threat_deleted", "quarantine_deleted"}
+               for e in events)
+
+
+# ---------------------------------------------------------------------------
+# GUI-side service quarantine actions (no Tk window required)
+# ---------------------------------------------------------------------------
+
+
+class _FakeIPCClient:
+    """Captures quarantine action calls instead of using a socket."""
+
+    calls: List[tuple] = []
+    response: Dict[str, Any] = {"ok": True}
+    raise_error: bool = False
+
+    @classmethod
+    def from_discovery(cls):
+        if cls.raise_error:
+            raise RuntimeError("background service is not running")
+        return cls()
+
+    def call(self, method, params=None, timeout=5.0):
+        _FakeIPCClient.calls.append((method, dict(params or {})))
+        return dict(_FakeIPCClient.response)
+
+
+def test_app_service_quarantine_action_routes_over_ipc(
+        test_database, monkeypatch):
+    """The GUI method sends the authenticated, confirmed IPC command."""
+    from services import windows_service as ws_module
+
+    app = _bare_app(test_database)
+    sent_messages: List[tuple] = []
+    monkeypatch.setattr(app, "ui_call", lambda func: func())
+    monkeypatch.setattr(app, "run_background",
+                        lambda worker, text: worker())
+    monkeypatch.setattr(app, "_message",
+                        lambda text, level="info": sent_messages.append(
+                            ("msg", text, level)))
+    monkeypatch.setattr(app, "refresh_merged_views",
+                        lambda: sent_messages.append(("refresh",)))
+    monkeypatch.setattr(ws_module, "ServiceIPCClient", _FakeIPCClient)
+
+    _FakeIPCClient.calls = []
+    _FakeIPCClient.response = {"ok": True}
+    app.service_quarantine_action(7, "restore")
+
+    assert _FakeIPCClient.calls == [(
+        "quarantine_restore",
+        {"quarantine_id": 7, "user_confirmed": True})]
+    kinds = [entry[0] for entry in sent_messages]
+    assert "msg" in kinds and "refresh" in kinds
+    success = [e for e in sent_messages if e[0] == "msg"]
+    assert any("restored" in e[1] for e in success)
+
+
+def test_app_service_quarantine_action_reports_errors(
+        test_database, monkeypatch):
+    """Failures reach the user as error messages, never as crashes."""
+    from services import windows_service as ws_module
+
+    app = _bare_app(test_database)
+    sent_messages: List[tuple] = []
+    monkeypatch.setattr(app, "ui_call", lambda func: func())
+    monkeypatch.setattr(app, "run_background",
+                        lambda worker, text: worker())
+    monkeypatch.setattr(app, "_message",
+                        lambda text, level="info": sent_messages.append(
+                            (text, level)))
+
+    monkeypatch.setattr(ws_module, "ServiceIPCClient", _FakeIPCClient)
+    _FakeIPCClient.calls = []
+    _FakeIPCClient.response = {"error": "Quarantine record 9 not found"}
+    app.service_quarantine_action(9, "delete")
+    assert any(level == "error" and "not found" in text
+               for text, level in sent_messages)
+
+    sent_messages.clear()
+    _FakeIPCClient.raise_error = True
+    app.service_quarantine_action(9, "restore")
+    _FakeIPCClient.raise_error = False
+    assert any(level == "error" and "not running" in text
+               for text, level in sent_messages)

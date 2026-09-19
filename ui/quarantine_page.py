@@ -80,34 +80,20 @@ class QuarantinePage(ttk.Frame):
     # Actions
     # ------------------------------------------------------------------
 
-    def _selected_record(self, *, allow_service: bool = False):
+    def _selected_record(self):
         """Return the DB record behind the selected row.
 
         Service-originated rows (background protection vault) are
-        read-only in this session: their files live in the service's
-        quarantine, so destructive actions are refused here unless
-        ``allow_service`` is set (details view is allowed).
+        included: restore/delete for them is routed through the
+        authenticated service IPC by the app layer.
         """
         selection = self.tree.selection()
         if not selection:
             tk.messagebox.showinfo("LocalGuard", "Select a quarantined item first.",
                                    parent=self)
             return None
-        record = self.app.quarantine_record_for_row(self.tree.item(
+        return self.app.quarantine_record_for_row(self.tree.item(
             selection[0], "values"))
-        if record is None:
-            return None
-        if not allow_service and record.get("origin") == "service":
-            tk.messagebox.showwarning(
-                "Background protection item",
-                "This item was quarantined by the LocalGuard background "
-                "service and lives in that service's vault. It is shown "
-                "here read-only - use the service session (or stop the "
-                "service) to restore or delete it.",
-                parent=self,
-            )
-            return None
-        return record
 
     def _restore_selected(self) -> None:
         """Restore the selected item after explicit confirmation."""
@@ -122,8 +108,12 @@ class QuarantinePage(ttk.Frame):
             parent=self,
         ):
             return
-        self.app.restore_quarantined(int(record["quarantine_id"]),
-                                     parent=self)
+        if record.get("origin") == "service":
+            self.app.service_quarantine_action(
+                int(record["quarantine_id"]), "restore", parent=self)
+        else:
+            self.app.restore_quarantined(int(record["quarantine_id"]),
+                                         parent=self)
         self.refresh()
 
     def _delete_selected(self) -> None:
@@ -138,7 +128,12 @@ class QuarantinePage(ttk.Frame):
             parent=self,
         ):
             return
-        self.app.delete_quarantined(int(record["quarantine_id"]), parent=self)
+        if record.get("origin") == "service":
+            self.app.service_quarantine_action(
+                int(record["quarantine_id"]), "delete", parent=self)
+        else:
+            self.app.delete_quarantined(int(record["quarantine_id"]),
+                                        parent=self)
         self.refresh()
 
     def _show_details(self) -> None:

@@ -66,9 +66,13 @@ git push origin vX.Y.Z
 
 - [ ] All jobs green (`gh run watch <run-id>` or the Actions tab).
 - [ ] **Sign frozen binaries** and **Sign installer** steps: either
-      *skipped* (secrets absent — artefacts will be unsigned; flag
-      this in the release notes) or *succeeded* (signed). A signing
-      **failure** blocks the release: fix before publishing.
+      *skipped* (signing secrets absent — artefacts will be unsigned;
+      flag this in the release notes) or *succeeded* (signed). A
+      signing **failure** blocks the release: fix before publishing.
+      Signing auth is OIDC-first (needs `AZURE_CLIENT_ID`,
+      `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` + a federated
+      credential) with a client-secret fallback — see
+      `docs/AZURE_SIGNING_SETUP.md`.
 - [ ] `Verify release artefacts` step passed (runs
       `scripts/check_release.py --artifacts dist`).
 - [ ] Both artefacts uploaded:

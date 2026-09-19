@@ -52,7 +52,8 @@ _MAX_HISTORY_LIMIT = 200
 
 # Fixed IPC method allow-list (spec section 58: no arbitrary execution).
 IPC_METHODS = ("status", "pause", "resume", "apply_settings", "shutdown",
-               "recent_findings", "get_history")
+               "recent_findings", "get_history",
+               "quarantine_restore", "quarantine_delete")
 
 
 class ServiceIPCError(Exception):
@@ -360,6 +361,8 @@ class ProtectionServiceCore:
         self.analyzer = None
         self.protection = None
         self.ipc: Optional[ServiceIPCServer] = None
+        self._quarantine_mgr = None
+        self._quarantine_db = None
         self._stop_event = threading.Event()
         # Streaming state: monotonically increasing sequence numbers so
         # the GUI can poll for *new* findings since its last watermark.
@@ -390,6 +393,9 @@ class ProtectionServiceCore:
         logger.info("Protection service core starting")
 
         self.database = get_database()
+        from quarantine.quarantine_database import QuarantineDatabase
+
+        self._quarantine_db = QuarantineDatabase(self.database)
         self.analyzer = FileAnalyzer(
             signature_engine=SignatureEngine(database=self.database),
             yara_engine=YaraEngine(),
@@ -409,6 +415,8 @@ class ProtectionServiceCore:
             "shutdown": lambda params: self.request_shutdown(),
             "recent_findings": self.recent_findings,
             "get_history": self.get_history,
+            "quarantine_restore": self.quarantine_restore,
+            "quarantine_delete": self.quarantine_delete,
         })
         if self.ipc.start():
             write_token_file(self.ipc.token, self.ipc.port, os.getpid())
@@ -437,6 +445,7 @@ class ProtectionServiceCore:
             except Exception:  # noqa: BLE001
                 logger.exception("Protection stop failed")
             self.protection = None
+        self._quarantine_mgr = None
         if self.database is not None:
             try:
                 self.database.add_event("service_stopped",
@@ -566,6 +575,72 @@ class ProtectionServiceCore:
             "database": db_path,
             "pid": os.getpid(),
         }
+
+    # ------------------------------------------------------------------
+    # Quarantine actions (explicitly user-confirmed via IPC)
+    # ------------------------------------------------------------------
+
+    def _quarantine_manager(self):
+        """Lazily build the service-side quarantine manager.
+
+        Uses the same shared database singleton as the rest of the
+        core, so the service's quarantine vault and records are
+        exactly what the GUI saw in ``get_history``.
+        """
+        if self._quarantine_mgr is None:
+            from quarantine.quarantine_manager import QuarantineManager
+
+            self._quarantine_mgr = QuarantineManager(
+                database=self._quarantine_db)
+        return self._quarantine_mgr
+
+    def _quarantine_action(self, params: Dict[str, Any],
+                           action: str) -> Dict[str, Any]:
+        """Shared body for quarantine_restore / quarantine_delete."""
+        raw_id = params.get("quarantine_id")
+        try:
+            quarantine_id = int(raw_id)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            raise ServiceIPCError(
+                "quarantine_id must be an integer") from None
+        confirmed = params.get("user_confirmed") is True
+        if not confirmed:
+            raise ServiceIPCError(
+                f"{action} requires explicit user confirmation")
+
+        manager = self._quarantine_manager()
+        if action == "restore":
+            from quarantine.restore_manager import RestoreManager
+
+            RestoreManager(manager).restore_quarantined(
+                quarantine_id, user_confirmed=True)
+        else:
+            manager.delete_permanently(quarantine_id, user_confirmed=True)
+
+        logger.warning(
+            "IPC quarantine %s performed on record %s (user-confirmed)",
+            action, quarantine_id)
+        if self.database is not None:
+            self.database.add_event(
+                f"threat_{action}d" if action != "restore" else "threat_restored",
+                f"Quarantine {action} performed via GUI over IPC "
+                f"(record {quarantine_id})")
+        return {"ok": True, "quarantine_id": quarantine_id,
+                "action": action}
+
+    def quarantine_restore(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Restore a quarantined item back to its original location.
+
+        Requires ``user_confirmed: true``; the GUI only sends that flag
+        after its own confirmation dialog, so the chain of consent is:
+        user confirms in the GUI, the GUI authenticates to the service
+        with the session token, the service performs the restore.
+        """
+        return self._quarantine_action(params, "restore")
+
+    def quarantine_delete(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Permanently delete a quarantined item (user-confirmed only)."""
+        return self._quarantine_action(params, "delete")
 
     # ------------------------------------------------------------------
     # Internals

@@ -890,6 +890,56 @@ class LocalGuardApp:
 
         self.run_background(worker, "Deleting...")
 
+    def service_quarantine_action(self, quarantine_id: int, action: str,
+                                  parent=None) -> None:
+        """Restore/delete a service-quarantined item over authenticated IPC.
+
+        Called only after the user confirmed in the GUI; the confirmation
+        flag travels with the authenticated request and the service
+        re-checks it before touching the vault.
+        """
+        past_tense = "restored" if action == "restore" else "permanently deleted"
+
+        def worker() -> None:
+            """IPC round-trip off the UI thread."""
+            from services.windows_service import ServiceIPCClient
+
+            try:
+                client = ServiceIPCClient.from_discovery()
+                if client is None:
+                    raise RuntimeError("background service is not running")
+                response = client.call(
+                    f"quarantine_{action}",
+                    {"quarantine_id": quarantine_id, "user_confirmed": True},
+                    timeout=10.0,
+                )
+            except Exception as exc:  # noqa: BLE001 - surfaced to the user
+                message = str(exc)
+                self.ui_call(lambda: self._message(
+                    f"Service {action} failed: {message}", "error"))
+                return
+            if response.get("error"):
+                error = str(response["error"])
+                self.ui_call(lambda: self._message(
+                    f"Service {action} failed: {error}", "error"))
+                return
+            self.ui_call(lambda: self._message(
+                f"File {past_tense} by the background service.", "info"))
+            self.ui_call(self.refresh_merged_views)
+
+        self.run_background(worker, f"{action.title()}ing via service...")
+
+    def refresh_merged_views(self) -> None:
+        """Refresh pages that blend service data into local rows."""
+        for name in ("quarantine", "history"):
+            page = self.pages.get(name)
+            refresh = getattr(page, "refresh", None)
+            if callable(refresh):
+                try:
+                    refresh()
+                except Exception:  # noqa: BLE001
+                    logger.exception("Refresh of %s page failed", name)
+
     def show_quarantine_details(self, record: Dict[str, Any], parent=None) -> None:
         """Show metadata for a quarantine record."""
         import tkinter.messagebox as messagebox
