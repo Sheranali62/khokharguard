@@ -11,6 +11,7 @@ import logging
 import logging.handlers
 import re
 import threading
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Optional
 
@@ -44,10 +45,23 @@ class SanitizingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
         try:
             record.msg = sanitize(str(record.msg))
-            if record.args:
-                record.args = tuple(
-                    sanitize(str(a)) if isinstance(a, str) else a for a in record.args
-                )
+            args = record.args
+            if args:
+                # Python's LogRecord keeps a single Mapping argument as
+                # a mapping in record.args (and splats its keys onto
+                # the record). Iterating it would yield KEYS and mangle
+                # the record, so handle mappings explicitly.
+                if isinstance(args, Mapping):
+                    record.args = {
+                        key: sanitize(str(value)) if isinstance(value, str)
+                        else value
+                        for key, value in args.items()
+                    }
+                else:
+                    record.args = tuple(
+                        sanitize(str(a)) if isinstance(a, str) else a
+                        for a in args
+                    )
         except Exception:  # never let logging itself crash the app
             pass
         return True
