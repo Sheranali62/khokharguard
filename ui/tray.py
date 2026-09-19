@@ -235,7 +235,7 @@ class KhokharGuardTray:
 
         self._thread = threading.Thread(
             target=run_icon, args=(self._icon,), daemon=True,
-            name="localguard-tray",
+            name="khokharguard-tray",
         )
         self._thread.start()
         self._started = True
@@ -294,7 +294,7 @@ class KhokharGuardTray:
         self._flash_stop.clear()
         self._flash_thread = threading.Thread(
             target=self._flash_loop, daemon=True,
-            name="localguard-tray-flash",
+            name="khokharguard-tray-flash",
         )
         self._flash_thread.start()
 
@@ -382,7 +382,7 @@ class KhokharGuardTray:
                 logger.debug("Tray update failed", exc_info=True)
 
         threading.Thread(target=update, daemon=True,
-                         name="localguard-tray-update").start()
+                         name="khokharguard-tray-update").start()
 
     # ------------------------------------------------------------------
     # Notifications (spec section 41)

@@ -6,6 +6,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-19
+
 ### Changed
 
 - **Rebrand to Khokhar & Son's Antivirus:** all user-facing surfaces

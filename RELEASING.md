@@ -81,7 +81,7 @@ git push origin vX.Y.Z
 ## 5. Verify artefacts by use (not just by size)
 
 Download both artefacts from the run page (or
-`gh api repos/Sheranali62/localguard/actions/artifacts`) and:
+`gh api repos/Sheranali62/khokharguard/actions/artifacts`) and:
 
 **Installer**
 - [ ] Zip extracts intact (no truncation).
@@ -110,7 +110,7 @@ sha256sum KhokharGuard_Setup_vX.Y.Z.exe KhokharGuard-portable-vX.Y.Z.zip
 
 ```bash
 gh release create vX.Y.Z \
-  --repo Sheranali62/localguard \
+  --repo Sheranali62/khokharguard \
   --title "Khokhar & Son's Antivirus vX.Y.Z" \
   --notes-file docs/RELEASE_NOTES_X.Y.Z.md \
   KhokharGuard_Setup_vX.Y.Z.exe \

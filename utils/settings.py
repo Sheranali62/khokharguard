@@ -36,6 +36,8 @@ class Settings:
         self._instance_path = instance_path or paths.settings_path()
         self._defaults = self._load_defaults()
         self._data: Dict[str, Any] = {}
+        # User-explicit values only (what the instance file stores).
+        self._user_data: Dict[str, Any] = {}
         self.load()
 
     # ------------------------------------------------------------------
@@ -60,15 +62,22 @@ class Settings:
                 except (OSError, json.JSONDecodeError) as exc:
                     logger.error("Settings file corrupt, using defaults: %s", exc)
                     data = {}
+            self._user_data = data
             self._data = _deep_merge(self._defaults, data)
 
     def save(self) -> None:
-        """Persist current settings to JSON."""
+        """Persist user-explicit settings to JSON.
+
+        Only values the user (or code) explicitly set are written; the
+        bundled defaults stay in default_config.json. This keeps the
+        instance file a faithful record of user choices, so defaults
+        follow app updates instead of being frozen at first write.
+        """
         with self._lock:
             try:
                 self._instance_path.parent.mkdir(parents=True, exist_ok=True)
                 self._instance_path.write_text(
-                    json.dumps(self._data, indent=2), encoding="utf-8"
+                    json.dumps(self._user_data, indent=2), encoding="utf-8"
                 )
             except OSError as exc:
                 logger.error("Could not save settings: %s", exc)
@@ -98,6 +107,15 @@ class Settings:
                 if not isinstance(node, dict):
                     raise ValueError(f"Setting path conflict at {dotted_key}")
             node[parts[-1]] = value
+            # Mirror into the user-explicit layer that gets persisted.
+            user = self._user_data
+            for part in parts[:-1]:
+                child = user.get(part)
+                if not isinstance(child, dict):
+                    child = {}
+                    user[part] = child
+                user = child
+            user[parts[-1]] = value
         if save:
             self.save()
 
@@ -109,6 +127,7 @@ class Settings:
     def reset_to_defaults(self) -> None:
         """Reset all settings to bundled defaults."""
         with self._lock:
+            self._user_data = {}
             self._data = json.loads(json.dumps(self._defaults))
         self.save()
 

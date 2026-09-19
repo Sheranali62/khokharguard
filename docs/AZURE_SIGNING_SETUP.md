@@ -122,7 +122,7 @@ the sign steps run.
      **Federated credentials** → **Add credential**.
    - Scenario: *GitHub Actions deploying Azure resources*.
    - Organization: `Sheranali62` (your GitHub org or username).
-   - Repository: `localguard`.
+   - Repository: `khokharguard`.
    - Entity type: **Tag**; value: `v*` (signing only ever runs on
      `vX.Y.Z` tag builds — the narrowest sensible trust).
    - Also copy the **Subscription ID** hosting the signing account
@@ -196,7 +196,7 @@ Nothing else needs to change in the workflow:
 | Endpoint errors / `name does not exist` | `AZURE_SIGNING_ENDPOINT` must be the region-specific account endpoint from the overview page, not the bare service domain. |
 | Signature shows `Status: UnknownError` | Almost always a missing/unreachable timestamp; the workflow already sets the Microsoft RFC 3161 server — check corporate TLS interception if verifying from inside a corporate network. |
 | Secrets added but steps still skip | The steps gate on `AZURE_CLIENT_ID` being non-empty at the **job** level, plus either `AZURE_CLIENT_SECRET` (fallback) or `AZURE_SUBSCRIPTION_ID` (OIDC); confirm you added repository *secrets*, not environment *variables*. |
-| OIDC: `azure/login` fails with `AADSTS70021` / no tenant-level federated credential | The federated credential doesn't match the run's claim. For tag builds the subject must resolve to `repo:Sheranali62/localguard:ref:refs/tags/vX.Y.Z` — re-check org, repo, entity type **Tag** and value `v*` in step 4 option A. |
+| OIDC: `azure/login` fails with `AADSTS70021` / no tenant-level federated credential | The federated credential doesn't match the run's claim. For tag builds the subject must resolve to `repo:Sheranali62/khokharguard:ref:refs/tags/vX.Y.Z` — re-check org, repo, entity type **Tag** and value `v*` in step 4 option A. |
 
 ## Security notes
 

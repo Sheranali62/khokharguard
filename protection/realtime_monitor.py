@@ -146,7 +146,7 @@ class RealTimeMonitor:
         if not self.using_watchdog:
             self._known_snapshot = self._snapshot_locations()
             self._poll_thread = threading.Thread(
-                target=self._poll_loop, name="localguard-rt-poll", daemon=True
+                target=self._poll_loop, name="khokharguard-rt-poll", daemon=True
             )
             self._poll_thread.start()
             logger.info("Real-time monitoring via polling on %d location(s)",

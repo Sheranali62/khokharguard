@@ -111,7 +111,7 @@ class ScanController:
                     logger.exception("on_finished callback error")
 
         self._thread = threading.Thread(
-            target=run, name=f"localguard-scan-{scan_type}", daemon=True
+            target=run, name=f"khokharguard-scan-{scan_type}", daemon=True
         )
         self._thread.start()
         return self._thread

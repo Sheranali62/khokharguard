@@ -156,7 +156,7 @@ class CanaryMonitor:
             }
         self._stop_event.clear()
         self._thread = threading.Thread(
-            target=self._poll_loop, name="localguard-canary", daemon=True
+            target=self._poll_loop, name="khokharguard-canary", daemon=True
         )
         self._thread.start()
         self.running = True

@@ -154,8 +154,19 @@ def _is_removable(path: Path) -> bool:
     )
 
 
+def _migrate_legacy_data() -> None:
+    """One-time import of pre-rebrand LocalGuard data (main.py helper)."""
+    try:
+        from utils.migration import maybe_migrate
+
+        maybe_migrate()
+    except Exception:  # noqa: BLE001 - startup must never break on this
+        logger.exception("Legacy data migration skipped after error")
+
+
 def cli_quick_scan() -> int:
     """Quick scan of common infection locations."""
+    _migrate_legacy_data()
     userprofile = Path.home()
     local = Path(__import__("os").environ.get(
         "LOCALAPPDATA", str(userprofile / "AppData" / "Local")))
@@ -353,6 +364,7 @@ def cli_main(argv: Optional[List[str]] = None) -> int:
 def run_gui() -> int:
     """Launch the Tkinter GUI."""
     setup_logging()
+    _migrate_legacy_data()
 
     import tkinter as tk
 

@@ -111,7 +111,7 @@ class HistoryPage(ttk.Frame):
         target = tk.filedialog.asksaveasfilename(
             parent=self, defaultextension=f".{fmt}",
             filetypes=[(f"{fmt.upper()} report", f"*.{fmt}")],
-            initialfile=f"localguard_report_{scan_id}.{fmt}",
+            initialfile=f"khokharguard_report_{scan_id}.{fmt}",
         )
         if not target:
             return

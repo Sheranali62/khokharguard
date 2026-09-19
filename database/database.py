@@ -391,6 +391,51 @@ class Database:
         )
 
     # ------------------------------------------------------------------
+    # legacy data import (pre-rebrand migration)
+    # ------------------------------------------------------------------
+
+    def table_columns(self, table: str) -> List[str]:
+        """Column names of *table*; empty list when it does not exist."""
+        with self._lock:
+            try:
+                rows = self._conn.execute(
+                    f"PRAGMA table_info({table})").fetchall()
+            except sqlite3.Error:
+                return []
+            return [row[1] for row in rows]
+
+    def import_rows(self, table: str,
+                    rows: List[Dict[str, Any]]) -> int:
+        """Insert rows from the legacy database (migration import).
+
+        Column names are validated against the current schema before
+        any SQL is built, so nothing can be injected through them.
+        Returns the number of rows inserted; a failure inside the loop
+        logs and continues with the next row (spec section 35).
+        """
+        valid = set(self.table_columns(table))
+        inserted = 0
+        with self._lock:
+            for row in rows:
+                cols = [c for c in row if c in valid]
+                if not cols:
+                    continue
+                placeholders = ", ".join("?" for _ in cols)
+                joined = ", ".join(cols)
+                try:
+                    self._conn.execute(
+                        f"INSERT INTO {table} ({joined}) "
+                        f"VALUES ({placeholders})",
+                        tuple(row[c] for c in cols),
+                    )
+                    inserted += 1
+                except sqlite3.Error as exc:
+                    logger.warning("Legacy row import failed (%s): %s",
+                                   table, exc)
+            self._conn.commit()
+        return inserted
+
+    # ------------------------------------------------------------------
     # signatures
     # ------------------------------------------------------------------
 

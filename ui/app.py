@@ -183,7 +183,7 @@ class KhokharGuardApp:
         # Header bar
         header = ttk.Frame(self.root)
         header.grid(row=0, column=0, columnspan=2, sticky="ew")
-        ttk.Label(header, text="\U0001F6E1  LOCALGUARD ANTIVIRUS",
+        ttk.Label(header, text="\U0001F6E1  KHOKHAR & SON'S ANTIVIRUS",
                   style="Title.TLabel").pack(side="left", padx=16, pady=10)
         self.status_label = ttk.Label(header, text="", style="Dim.TLabel")
         self.status_label.pack(side="right", padx=16)
@@ -228,11 +228,20 @@ class KhokharGuardApp:
         for key, page_class in page_classes.items():
             self.pages[key] = page_class(self.page_container, self)
 
+        # Stack every page in the container. show_page() raises the
+        # active one; without a geometry manager the pages would stay
+        # 1x1 invisible frames (tkraise alone does not map a widget).
+        self.page_container.rowconfigure(0, weight=1)
+        self.page_container.columnconfigure(0, weight=1)
+        for page in self.pages.values():
+            page.grid(row=0, column=0, sticky="nsew")
+
         self.show_page("dashboard")
 
     def show_page(self, key: str) -> None:
         """Switch to the named page and refresh it."""
         page = self.pages[key]
+        page.grid(row=0, column=0, sticky="nsew")
         page.tkraise()
         if hasattr(page, "refresh"):
             try:
@@ -505,7 +514,7 @@ class KhokharGuardApp:
                     self.ui_call(lambda: self.status_label.configure(text=""))
 
         threading.Thread(target=wrapper, daemon=True,
-                         name="localguard-bg").start()
+                         name="khokharguard-bg").start()
 
     # ------------------------------------------------------------------
     # Theme

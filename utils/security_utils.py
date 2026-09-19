@@ -93,7 +93,7 @@ def is_reparse_point(path: Path) -> bool:
     return bool(st.st_file_attributes & 0x400) if hasattr(st, "st_file_attributes") else path.is_symlink()
 
 
-def safe_temp_dir(prefix: str = "localguard_") -> tempfile.TemporaryDirectory:
+def safe_temp_dir(prefix: str = "khokharguard_") -> tempfile.TemporaryDirectory:
     """Create a private temporary directory with restrictive permissions.
 
     Used for archive inspection and the EICAR self-test; caller must

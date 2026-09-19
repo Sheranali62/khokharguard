@@ -131,7 +131,7 @@ def export_report(scan_id: int, fmt: str, output_path: Optional[Path] = None) ->
         raise ValueError(f"Unsupported report format: {fmt}")
 
     if output_path is None:
-        output_path = paths.reports_dir() / f"localguard_report_{scan_id}.{fmt}"
+        output_path = paths.reports_dir() / f"khokharguard_report_{scan_id}.{fmt}"
 
     generators = {
         "txt": generate_text_report,

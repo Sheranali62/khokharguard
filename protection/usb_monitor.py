@@ -97,7 +97,7 @@ class USBMonitor:
             self._known = {d.drive_letter for d in enumerate_usb_devices()}
         self._stop_event.clear()
         self._thread = threading.Thread(
-            target=self._poll_loop, name="localguard-usb", daemon=True
+            target=self._poll_loop, name="khokharguard-usb", daemon=True
         )
         self._thread.start()
         self.running = True

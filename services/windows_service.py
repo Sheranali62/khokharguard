@@ -168,7 +168,7 @@ class ServiceIPCServer:
 
         self._stop_event.clear()
         self._accept_thread = threading.Thread(
-            target=self._accept_loop, daemon=True, name="localguard-ipc-accept")
+            target=self._accept_loop, daemon=True, name="khokharguard-ipc-accept")
         self._accept_thread.start()
         logger.info("IPC server listening on %s:%d", self.host, self.port)
         return True
@@ -219,7 +219,7 @@ class ServiceIPCServer:
                 continue
             threading.Thread(
                 target=self._serve_client, args=(conn,), daemon=True,
-                name="localguard-ipc-req").start()
+                name="khokharguard-ipc-req").start()
 
     def _serve_client(self, conn: socket.socket) -> None:
         """Handle one request/response exchange on *conn*.

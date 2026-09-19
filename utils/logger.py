@@ -1,6 +1,6 @@
 """Khokhar & Son's Antivirus - logging setup.
 
-Creates logs/localguard.log plus a console handler. Provides a log
+Creates logs/khokharguard.log plus a console handler. Provides a log
 sanitiser so secrets (passwords, tokens, keys) are never written to
 log files, per spec section 36.
 """
@@ -62,12 +62,12 @@ def setup_logging(
     global _CONFIGURED
     with _LOCK:
         if _CONFIGURED:
-            return logging.getLogger("localguard")
+            return logging.getLogger("khokharguard")
 
         if log_path is None:
             log_path = paths.log_file_path()
 
-        logger = logging.getLogger("localguard")
+        logger = logging.getLogger("khokharguard")
         logger.setLevel(logging.DEBUG)
         logger.propagate = False
 
@@ -103,5 +103,5 @@ def setup_logging(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Return a child logger under the localguard namespace."""
-    return logging.getLogger(f"localguard.{name}")
+    """Return a child logger under the khokharguard namespace."""
+    return logging.getLogger(f"khokharguard.{name}")

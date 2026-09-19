@@ -40,7 +40,7 @@ class AboutPage(ttk.Frame):
         )
         palette.pack(pady=(16, 4))
 
-        ttk.Label(card, text="LOCALGUARD ANTIVIRUS",
+        ttk.Label(card, text="KHOKHAR & SON'S ANTIVIRUS",
                   style="H2.TLabel",
                   font=("Segoe UI", 20, "bold")).pack()
         ttk.Label(card, text=f"Version {self.app.version}",

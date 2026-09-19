@@ -221,7 +221,7 @@ def khokharguard_in_defender_exclusions() -> Optional[bool]:
                     name, _value, _vtype = winreg.EnumValue(key, index)
                 except OSError:
                     break
-                if name.lower().endswith("localguard.exe"):
+                if name.lower().endswith("khokharguard.exe"):
                     return True
                 index += 1
     except (ImportError, OSError, FileNotFoundError):

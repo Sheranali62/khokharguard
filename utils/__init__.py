@@ -12,9 +12,9 @@ __all__ = list(_EXPOSED) + ["get_logger"]
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Return a child logger under the localguard namespace.
+    """Return a child logger under the khokharguard namespace.
 
     Importing :mod:`utils` does not import submodules; call
     ``utils.logger.setup_logging()`` early in main to configure output.
     """
-    return logging.getLogger(f"localguard.{name}")
+    return logging.getLogger(f"khokharguard.{name}")
