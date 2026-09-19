@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define MyAppName "Khokhar & Son's Antivirus"
-#define MyAppVersion "9.9.9"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "Khokhar & Son's"
 #define MyAppExeName "KhokharGuard.exe"
 

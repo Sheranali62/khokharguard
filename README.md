@@ -155,7 +155,7 @@ Then build the installer:
 iscc installer\KhokharGuard_Setup.iss
 ```
 
-Output: `dist\installer\KhokharGuard_Setup_9.9.9.exe` (Inno Setup;
+Output: `dist\installer\KhokharGuard_Setup_1.1.0.exe` (Inno Setup;
 creates Start Menu / optional desktop shortcuts, optional HKCU
 autostart, per-user data directories, and a clean uninstaller that
 preserves quarantine/logs/reports). The installer requires
@@ -173,7 +173,7 @@ installer and portable bundle as workflow artefacts.
 
 ## Installation (installer)
 
-1. Run `KhokharGuard_Setup_9.9.9.exe`.
+1. Run `KhokharGuard_Setup_1.1.0.exe`.
 2. Follow the wizard (desktop icon and autostart are optional).
 3. Launch **Khokhar & Son's Antivirus** from the Start Menu.
 4. On first run, choose your protection options — every option is
