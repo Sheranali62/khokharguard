@@ -192,6 +192,12 @@ def test_polling_loop_detects_tamper(fake_home):
             time.sleep(0.2)
         assert monitor.tamper_events == 1, (
             "poller must detect the tamper within its interval")
+        # The monitor re-plants right after recording the event; await
+        # the re-plant instead of racing the poller mid-restore.
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and \
+                victim.read_text(encoding="utf-8") != CANARY_TEXT:
+            time.sleep(0.05)
         assert victim.read_text(encoding="utf-8") == CANARY_TEXT
     finally:
         monitor.stop()
