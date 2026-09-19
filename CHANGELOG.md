@@ -209,3 +209,6 @@ Initial release.
   deployments should add cryptographic signing on top.
 
 [1.0.0]: https://example.invalid/khokharguard/releases/tag/v1.0.0
+
+## [9.9.9] - 2026-09-19
+Temporary throwaway version used solely to prove the REQUIRE_SIGNED_ARTIFACTS CI gate fails closed. Tag deleted after the run; never released.
